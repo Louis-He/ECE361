@@ -9,7 +9,7 @@ struct packet {
     unsigned int frag_no;
     unsigned int size;
     char* filename;
-    char filedata[1000];
+    unsigned char filedata[1000];
 };
 
 #endif
