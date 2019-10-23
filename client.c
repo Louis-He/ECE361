@@ -101,19 +101,37 @@ int main(int argc, char** argv) {
     }
     
     // start receive info back from server
+    
+    // SET INIT TIMEOUT
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 100000; // 100ms
+    if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+        perror("Error");
+    }
+    
     // recvfrom()
     struct sockaddr_storage incoming_addr;
     socklen_t incoming_addr_size = sizeof incoming_addr;
     
     char buf[100];
-    numbytes = recvfrom(s, buf, 99, 0, (struct sockaddr *)&incoming_addr, &incoming_addr_size);
-    if(numbytes == -1){
+//    numbytes = recvfrom(s, buf, 99, 0, (struct sockaddr *)&incoming_addr, &incoming_addr_size);
+    if(recvfrom(s, buf, 99, 0, (struct sockaddr *)&incoming_addr, &incoming_addr_size) < 0){
         perror("recvfrom");
+        printf("[Error] Server cannot be reached. Exit");
+        return EXIT_FAILURE;
     }
     gettimeofday(&end, NULL); // stop clocking
 //    long seconds = (end.tv_sec - start.tv_sec);
     long micros = (end.tv_usec) - (start.tv_usec);
     printf("[INFO] RRT : %lu us\n", micros); 
+    
+    // SET TIMEOUT BASED ON RRT
+    tv.tv_sec = 0;
+    tv.tv_usec = micros * 1000 * 10; // 10 * RRT
+    if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+        perror("Error");
+    }
     
     buf[numbytes] = '\0';
     printf("[INFO] Receive Info from Server : %s\n", buf); 
@@ -144,6 +162,7 @@ int main(int argc, char** argv) {
     for(int i = 0; i < total_frag; i++){
         unsigned char* charStr;
         int packageLen = packetToStr(packetList[i], &charStr);
+        int sendTimes = 1;
                 
         numbytes = sendto(s, charStr, packageLen, MSG_CONFIRM, res->ai_addr, res->ai_addrlen);
         if (numbytes == -1){
@@ -153,15 +172,33 @@ int main(int argc, char** argv) {
             printf("[INFO] Success sending to server. Packet: %d/%d \n", i + 1, total_frag);
         }
         
-        // wait for ackknowledgement
+        // wait for acknowledgement
         char buf[100];
-        numbytes = recvfrom(s, buf, 99, 0, (struct sockaddr *)&incoming_addr, &incoming_addr_size);
-        if(numbytes == -1){
+
+        while(recvfrom(s, buf, 99, 0, (struct sockaddr *)&incoming_addr, &incoming_addr_size) < 0 && sendTimes <= 5){
             perror("recvfrom");
-        }else{
-            printf("[INFO] Server responded.\n");
+            printf("Try %d-th times.\n", sendTimes);
+            numbytes = sendto(s, charStr, packageLen, MSG_CONFIRM, res->ai_addr, res->ai_addrlen);
+            if (numbytes == -1){
+                printf("[Error] Fail to send to server.\n");
+                return (EXIT_FAILURE);
+            }else {
+                printf("[INFO] Success sending to server. Packet: %d/%d \n", i + 1, total_frag);
+            }
+            
+            sendTimes += 1;
         }
-    
+        
+        if(sendTimes >= 6){
+            printf("\n");
+            printf("**************************************************************\n");
+            printf("** [CRITICAL WARNING] Connection lost. Transfer Terminated. **\n");
+            printf("**************************************************************\n");
+            printf("\n");
+            exit(0);
+        }
+        
+        printf("[INFO] Server responded.\n");
     }
     
     // free all malloced space
@@ -247,7 +284,6 @@ int packetToStr(struct packet* packetPtr, unsigned char** packetStr){
     totalLength = total_frag_length + frag_no_length + size_length + filename_length + packetPtr->size + 4;
     *packetStr = (unsigned char*)malloc(sizeof(unsigned char) * totalLength);
     
-    // TODO: NOT DONE!!!!
     // add total frag length
     char totalFlagStr[total_frag_length];
     sprintf(totalFlagStr, "%d", packetPtr->total_frag);
