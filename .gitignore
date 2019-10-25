@@ -1,1 +1,4 @@
 .idea/
+!lab1/transfer/.gitkeep
+lab1/client
+lab1/server
