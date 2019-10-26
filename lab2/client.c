@@ -79,7 +79,7 @@ int main(int argc, char** argv){
                     sendMessage(s);
 
                     // received from server to comfirm connection
-                    int numbytes = recv(s, buf, MAXDATASIZE-1, 0)) == -1;
+                    int numbytes = recv(s, buf, MAXDATASIZE-1, 0);
                     if (numbytes == -1) {
                         perror("recv");
                         exit(1);
