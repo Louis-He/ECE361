@@ -9,5 +9,6 @@
 // 1: ready to transfer
 // 2: error input
 int readInAndProcessCommand(unsigned char* commandLine[5], unsigned char* encodedData);
+void sendMessage(int s);
 // int dataToStr(unsigned char* commandLine[5], unsigned char* dataField, int commandArgc);
 void unsignedStrCopy(unsigned char* dst, unsigned char* src);

@@ -56,6 +56,7 @@ int main(int argc, char** argv){
         if(isLoop == 1){
             // valid input
             struct message sendMsg;
+            
             if(strcmp((char*)commandIn[0], "login") == 0){
                 if(connectionInfo.isConnected){
                     printf("[ERROR] Already connected. Please drop the connection first.\n");
@@ -71,6 +72,7 @@ int main(int argc, char** argv){
                         perror("[ERROR] Client connect");
                         continue;
                     }
+                    sendMessage(s);
                     printf("[INFO] Connected");
                 }
             }else{
@@ -141,6 +143,12 @@ int readInAndProcessCommand(unsigned char* commandLine[5], unsigned char* encode
     }
 
     return 2;
+}
+
+void sendMessage(int s){
+    if(send(s, "Hello, world!", 13, 0) == -1){
+        perror("send");
+    }
 }
 
 // helper functions below
