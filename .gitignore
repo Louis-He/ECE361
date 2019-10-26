@@ -1,6 +1,9 @@
 .idea/
+.DS_Store
 lab1/transfer/*
 !lab1/transfer/.gitkeep
 lab1/client
 lab1/server
 lab1/test*
+lab2/client
+lab2/server
