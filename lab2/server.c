@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
             close(s); // child doesn't need the listener
 
             int numbytes;
-            if ((numbytes = recv(s, buf, MAXDATASIZE-1, 0)) == -1) {
+            if ((numbytes = recv(new_fd, buf, MAXDATASIZE-1, 0)) == -1) {
                 perror("recv");
                 exit(1);
             }
