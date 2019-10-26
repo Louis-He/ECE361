@@ -73,19 +73,20 @@ int main(int argc, char** argv){
                         perror("[ERROR] Cannot Connect To the Server");
                         continue;
                     }
+                    printf("[INFO] Connected to the Server\n");
+
+                    // send login info
+                    sendMessage(s);
 
                     // received from server to comfirm connection
-                    int numbytes;
-                    if ((numbytes = recv(s, buf, MAXDATASIZE-1, 0)) == -1) {
+                    int numbytes = recv(s, buf, MAXDATASIZE-1, 0)) == -1;
+                    if (numbytes == -1) {
                         perror("recv");
                         exit(1);
                     }
                     buf[numbytes] = '\0';
                     printf("client: received '%s'\n",buf);
 
-                    // send login info
-                    sendMessage(s);
-                    printf("[INFO] Connected to the Server\n");
                     connectionInfo.isConnected = true;
                 }
             }else{
