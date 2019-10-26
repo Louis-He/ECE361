@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200112L
+#define MAXDATASIZE 1000
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,6 +52,7 @@ int main(int argc, char** argv) {
     struct sockaddr_storage their_addr; // connector's address information
     socklen_t sin_size;
 
+    char buf[MAXDATASIZE];
     while (true) {
         sin_size = sizeof their_addr;
         new_fd = accept(s, (struct sockaddr *)&their_addr, &sin_size);
@@ -62,13 +64,21 @@ int main(int argc, char** argv) {
         // ?? mutithreading?
         if (!fork()) { // this is the child process
             close(s); // child doesn't need the listener
+
+            int numbytes;
+            if ((numbytes = recv(s, buf, MAXDATASIZE-1, 0)) == -1) {
+                perror("recv");
+                exit(1);
+            }
+            buf[numbytes] = '\0';
+            printf("Server: received '%s'\n",buf);
+
             if (send(new_fd, "Hello, world!", 13, 0) == -1)
                 perror("send");
             close(new_fd);
             exit(0);
         }
         close(new_fd);  // parent doesn't need this
-
     }
 
     return 0;

@@ -70,7 +70,7 @@ int main(int argc, char** argv){
                     }
                     s = socket(AF_INET, SOCK_STREAM, 0);
                     if(connect(s, res->ai_addr, res->ai_addrlen) == -1){
-                        perror("[ERROR] Client connect\n");
+                        perror("[ERROR] Cannot Connect To the Server");
                         continue;
                     }
 
