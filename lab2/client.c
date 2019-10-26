@@ -52,7 +52,6 @@ int main(int argc, char** argv){
         }
         memset (encodedData, '\0', sizeof(unsigned char) * MAX_COMMAND_LEN);
         int isLoop = readInAndProcessCommand(commandIn, encodedData);
-        printf("%s\n", encodedData);
 
         if(isLoop == 1){
             // valid input
@@ -75,8 +74,13 @@ int main(int argc, char** argv){
                     }
                     printf("[INFO] Connected to the Server\n");
 
+                    // create login info pack
+                    sendMsg.type = 1;
+                    sendMsg.size = strlen((char*) encodedData);
+                    strcpy((char*) sendMsg.source, (char*) commandIn[1]);
+                    strcpy((char*) sendMsg.data, (char*) encodedData);
                     // send login info
-                    sendMessage(s);
+                    sendMessage(s, sendMsg);
 
                     // received from server to comfirm connection
                     int numbytes = recv(s, buf, MAXDATASIZE-1, 0);
@@ -85,7 +89,7 @@ int main(int argc, char** argv){
                         exit(1);
                     }
                     buf[numbytes] = '\0';
-                    printf("client: received '%s'\n",buf);
+                    printf("client: received '%s'\n", buf);
 
                     connectionInfo.isConnected = true;
                 }
@@ -154,8 +158,11 @@ int readInAndProcessCommand(unsigned char* commandLine[5], unsigned char* encode
     return 2;
 }
 
-void sendMessage(int s){
-    if(send(s, "Hello, world!", 13, 0) == -1){
+void sendMessage(int s, struct message encodedMsg){
+    char txt[MAXDATASIZE];
+    const int len = sprintf(txt, "%d,%d,%s,%s",
+        encodedMsg.type, encodedMsg.size, encodedMsg.source, encodedMsg.data);
+    if(send(s, txt, strlen(txt), 0) == -1){
         perror("send");
     }
 }
