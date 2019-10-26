@@ -13,6 +13,7 @@
 
 #define BACKLOG 10   // how many pending connections queue will hold
 
+/*  * Part of the code is cited from https://beej.us/guide/bgnet/  */
 
 int main(int argc, char** argv) {
     if(argc != 2){
@@ -35,6 +36,7 @@ int main(int argc, char** argv) {
     int rv = getaddrinfo(NULL, portNum, &hints, &res);
 
     int s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    int new_fd;
     setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
     bind(s, res->ai_addr, res->ai_addrlen);
 
@@ -46,8 +48,17 @@ int main(int argc, char** argv) {
     printf("server: waiting for connections...\n");
 
     // start transmission
+    struct sockaddr_storage their_addr; // connector's address information
+    socklen_t sin_size;
+
     while (true) {
-        /* code */
+        sin_size = sizeof their_addr;
+        new_fd = accept(s, (struct sockaddr *)&their_addr, &sin_size);
+        if (new_fd == -1) {
+            perror("accept");
+            continue;
+        }
+
     }
 
     return 0;

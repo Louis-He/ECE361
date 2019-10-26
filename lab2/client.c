@@ -14,6 +14,8 @@
 #include "client.h"
 #include "message.h"
 
+/*  * Part of the code is cited from https://beej.us/guide/bgnet/  */
+
 int main(int argc, char** argv){
     printf("[Info] Text Conference Service Start. Please connect to a server.\n");
 
@@ -21,21 +23,18 @@ int main(int argc, char** argv){
     connectionInfo.isConnected = false;
     connectionInfo.isInSession = false;
     // Start connection here
-    // // socket()
-    // int s = socket(AF_INET, SOCK_DGRAM, 0);
-    //
-    // // connection
-    // struct addrinfo hints;
-    // struct addrinfo* res;
-    // memset(&hints, 0, sizeof hints);
-    // hints.ai_family = AF_INET;  // use IPv4 or IPv6, whichever
-    // hints.ai_socktype = SOCK_STREAM;
-    // hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
-    //
-    // int rv = getaddrinfo(destAddr, portNum, &hints, &res);
-    //
-    // inet_ntop(hints.ai_family, get_in_addr((struct sockaddr *)res),
-    //         s, sizeof s);
+
+    // socket()
+    int s;
+
+    // connection
+    struct addrinfo hints;
+    struct addrinfo* res;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;  // use IPv4
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
+
 
     // initialize some data
     unsigned char* commandIn[5];
@@ -60,6 +59,19 @@ int main(int argc, char** argv){
             if(strcmp((char*)commandIn[0], "login") == 0){
                 if(connectionInfo.isConnected){
                     printf("[ERROR] Already connected. Please drop the connection first.\n");
+                }else{
+                    // start new connection here
+                    int rv = getaddrinfo((char *)commandIn[3], (char *)commandIn[4], &hints, &res);
+                    if(rv != 0){
+                        printf("[ERROR] Invalid IP Address or Port Number.\n");
+                        continue;
+                    }
+                    s = socket(AF_INET, SOCK_STREAM, 0);
+                    if(connect(s, res->ai_addr, res->ai_addrlen) == -1){
+                        perror("[ERROR] Client connect");
+                        continue;
+                    }
+                    printf("[INFO] Connected");
                 }
             }else{
                 if(!connectionInfo.isConnected){
@@ -73,6 +85,9 @@ int main(int argc, char** argv){
             }
 
         }else if (isLoop == 0){
+            printf("[INFO] Quit Text Conference Service.\n");
+            printf("************************************\n");
+            printf("      Have a good day. Bye.         \n");
             break;
         }else if (isLoop == 2){
             printf("[ERROR] Invalid Command, Please Check.\n");
