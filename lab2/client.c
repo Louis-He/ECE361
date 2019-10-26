@@ -1,5 +1,5 @@
 #define _POSIX_C_SOURCE 200112L
-#define FRAG_SIZE 1000
+#define MAXDATASIZE 1000
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,6 +26,7 @@ int main(int argc, char** argv){
 
     // socket()
     int s;
+    char buf[MAXDATASIZE];
 
     // connection
     struct addrinfo hints;
@@ -56,7 +57,7 @@ int main(int argc, char** argv){
         if(isLoop == 1){
             // valid input
             struct message sendMsg;
-            
+
             if(strcmp((char*)commandIn[0], "login") == 0){
                 if(connectionInfo.isConnected){
                     printf("[ERROR] Already connected. Please drop the connection first.\n");
@@ -72,6 +73,17 @@ int main(int argc, char** argv){
                         perror("[ERROR] Client connect");
                         continue;
                     }
+
+                    // received from server to comfirm connection
+                    int numbytes;
+                    if ((numbytes = recv(s, buf, MAXDATASIZE-1, 0)) == -1) {
+                        perror("recv");
+                        exit(1);
+                    }
+                    buf[numbytes] = '\0';
+                    printf("client: received '%s'\n",buf);
+
+                    // send login info
                     sendMessage(s);
                     printf("[INFO] Connected");
                 }
@@ -149,6 +161,10 @@ void sendMessage(int s){
     if(send(s, "Hello, world!", 13, 0) == -1){
         perror("send");
     }
+}
+
+void readMessage(){
+
 }
 
 // helper functions below
