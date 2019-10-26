@@ -70,7 +70,7 @@ int main(int argc, char** argv){
                     }
                     s = socket(AF_INET, SOCK_STREAM, 0);
                     if(connect(s, res->ai_addr, res->ai_addrlen) == -1){
-                        perror("[ERROR] Client connect");
+                        perror("[ERROR] Client connect\n");
                         continue;
                     }
 
@@ -85,7 +85,8 @@ int main(int argc, char** argv){
 
                     // send login info
                     sendMessage(s);
-                    printf("[INFO] Connected");
+                    printf("[INFO] Connected to the Server\n");
+                    connectionInfo.isConnected = true;
                 }
             }else{
                 if(!connectionInfo.isConnected){
@@ -124,9 +125,6 @@ int readInAndProcessCommand(unsigned char* commandLine[5], unsigned char* encode
         scanf("%s", commandLine[3]);
         scanf("%s", commandLine[4]);
 
-        encodedData = (unsigned char*)realloc(encodedData, sizeof(unsigned char) * (
-            strlen((char*)commandLine[1]) + strlen((char*)commandLine[2]) + 1
-        ));
         unsignedStrCopy(encodedData, commandLine[1]);
         int tmpLen = strlen((char *)encodedData);
         encodedData[tmpLen] = ':';
@@ -138,14 +136,12 @@ int readInAndProcessCommand(unsigned char* commandLine[5], unsigned char* encode
         return 1;
     } else if(strcmp((char*)commandLine[0], "joinsession") == 0){
         scanf("%s", commandLine[1]);
-        encodedData = (unsigned char*)realloc(encodedData, sizeof(unsigned char) * strlen((char *)commandLine[1]));
         strcpy((char*)encodedData, (char*)commandLine[1]);
         return 1;
     } else if(strcmp((char*)commandLine[0], "leavesession") == 0){
         return 1;
     } else if(strcmp((char*)commandLine[0], "createsession") == 0){
         scanf("%s", commandLine[1]);
-        encodedData = (unsigned char*)realloc(encodedData, sizeof(unsigned char) * strlen((char *)commandLine[1]));
         strcpy((char*)encodedData, (char*)commandLine[1]);
         return 1;
     } else if(strcmp((char*)commandLine[0], "list") == 0){
