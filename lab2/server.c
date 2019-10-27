@@ -140,6 +140,8 @@ int processIncomingMsg(char* incomingMsg, unsigned char* ackInfo){
         printUserList();
         strcpy((char*) ackInfo, (char*) "LIST RETURN");
         return 13;
+    }else if(decodedMsg.type == 9){
+        
     }
 
     return -1;

@@ -79,3 +79,30 @@ void Logout(unsigned char* clientID){
         }
     }
 }
+
+bool createSession(unsigned char* sessionID, unsigned char* returnMessage){
+    int avaliableSessionIdx = -1;
+
+    // check if already exist sessionID
+    for(int i = 0; i < MAX_CONN; i++){
+        if(strcmp((char*) currentSessionInfo[i].sessionID, (char*) sessionID) == 0){
+            strcpy((char *) returnMessage, (char *)"[ERROR] SessionID already existed.");
+            return false;
+        }
+        if(currentSessionInfo[i].membernum == 0){
+            avaliableSessionIdx = i;
+        }
+    }
+    if(avaliableSessionIdx == -1){
+        strcpy((char *) returnMessage, (char *)"[ERROR] Maximum session achieved. No more new session.");
+        return false;
+    }
+    newSession(sessionID, avaliableSessionIdx);
+    strcpy((char *) returnMessage, (char *)"[INFO] Session created successfully.");
+
+    return true;
+}
+
+void newSession(unsigned char* sessionID, int idx) {
+    /* code */
+}

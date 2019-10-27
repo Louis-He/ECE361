@@ -28,5 +28,7 @@ bool attemptLogin(unsigned char* clientID, unsigned char* clientPW,
     unsigned char* returnMessage);
 void printUserList();
 void Logout(unsigned char* clientID);
+bool createSession(unsigned char* sessionID, unsigned char* returnMessage);
+void newSession(unsigned char* sessionID, int idx);
 
 #endif

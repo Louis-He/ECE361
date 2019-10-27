@@ -141,6 +141,27 @@ int main(int argc, char** argv){
                     struct message decodedMsg = readMessage(buf);
 
 
+                }else if(strcmp((char*)commandIn[0], "createsession") == 0){
+                    // TODO.
+                    // create create session info pack
+                    sendMsg.type = 9;
+                    sendMsg.size = strlen((char*) commandIn[1]);
+                    strcpy((char*) sendMsg.source, (char*) connectionInfo.source);
+                    strcpy((char*) sendMsg.data, (char*) commandIn[1]);
+                    // send create session info
+                    printf("[INFO] Message ready\n");
+                    sendMessage(s, sendMsg);
+
+                    // received from server to comfirm successfully create and joinsession
+                    int numbytes = recv(s, buf, MAXDATASIZE-1, 0);
+                    if (numbytes == -1) {
+                        perror("recv");
+                        exit(1);
+                    }
+                    buf[numbytes] = '\0';
+
+                    struct message decodedMsg = readMessage(buf);
+
                 }else if(strcmp((char*)commandIn[0], "logout") == 0){
                     // create logout info pack
                     sendMsg.type = 4;
