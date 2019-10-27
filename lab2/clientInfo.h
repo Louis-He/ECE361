@@ -28,7 +28,15 @@ bool attemptLogin(unsigned char* clientID, unsigned char* clientPW,
     unsigned char* returnMessage);
 void printUserList();
 void Logout(unsigned char* clientID);
-bool createSession(unsigned char* sessionID, unsigned char* returnMessage);
+
+int findClient(unsigned char* clientID);
+int findSession(unsigned char* sessionID);
+
+bool clientInSession(unsigned char* clientID);
+bool joinSession(unsigned char* clientID, bool newSession, unsigned char* sessionID, unsigned char* returnMessage);
+bool createSession(unsigned char* clientID, unsigned char* sessionID, unsigned char* returnMessage);
 void newSession(unsigned char* sessionID, int idx);
+bool leaveSession(unsigned char* clientID, unsigned char* returnMessage);
+void printSessionList();
 
 #endif

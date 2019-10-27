@@ -141,7 +141,19 @@ int processIncomingMsg(char* incomingMsg, unsigned char* ackInfo){
         strcpy((char*) ackInfo, (char*) "LIST RETURN");
         return 13;
     }else if(decodedMsg.type == 9){
-        
+        bool isCreateSuccess = createSession(decodedMsg.source, decodedMsg.data, ackInfo);
+        if(isCreateSuccess){
+            return 10;
+        }else{
+            return 15;
+        }
+    }else if(decodedMsg.type == 8){
+        bool isLeaveSuccess = leaveSession(decodedMsg.source, ackInfo);
+        if(isLeaveSuccess){
+            return 16;
+        }else{
+            return 17;
+        }
     }
 
     return -1;

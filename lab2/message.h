@@ -47,5 +47,9 @@ struct message readMessage(char* incomingMsg);
         <users and sessions list>
     -- extra type
     14: [server -> client] ACK for logout
+    15: [server -> client] acknowledge unsuccessful created new session
+    16: [server -> client] leave session successful
+    17: [server -> client] leave session failed
+
 */
 #endif

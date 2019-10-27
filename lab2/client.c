@@ -142,7 +142,10 @@ int main(int argc, char** argv){
 
 
                 }else if(strcmp((char*)commandIn[0], "createsession") == 0){
-                    // TODO.
+                    if(connectionInfo.isInSession){
+                        printf("[ERROR] Already in session.\n");
+                        continue;
+                    }
                     // create create session info pack
                     sendMsg.type = 9;
                     sendMsg.size = strlen((char*) commandIn[1]);
@@ -161,6 +164,43 @@ int main(int argc, char** argv){
                     buf[numbytes] = '\0';
 
                     struct message decodedMsg = readMessage(buf);
+                    if(decodedMsg.type == 10){
+                        printf("%s\n", decodedMsg.data);
+                        // create session successfully
+                        connectionInfo.isInSession = true;
+                    }else if(decodedMsg.type == 15){
+                        printf("%s\n", decodedMsg.data);
+                    }
+                }else if(strcmp((char*)commandIn[0], "joinsession") == 0){
+                    // TODO HERE!!!!
+                }else if(strcmp((char*)commandIn[0], "leavesession") == 0){
+                    if(!connectionInfo.isInSession){
+                        printf("[ERROR] Not in any session. Join a session first.\n");
+                        continue;
+                    }
+                    // create leave session info pack
+                    sendMsg.type = 8;
+                    sendMsg.size = 0;
+                    strcpy((char*) sendMsg.source, (char*) connectionInfo.source);
+                    strcpy((char*) sendMsg.data, "");
+                    // send leave session info
+                    printf("[INFO] Message ready\n");
+                    sendMessage(s, sendMsg);
+
+                    // received from server to comfirm successfully create and joinsession
+                    int numbytes = recv(s, buf, MAXDATASIZE-1, 0);
+                    if (numbytes == -1) {
+                        perror("recv");
+                        exit(1);
+                    }
+                    buf[numbytes] = '\0';
+
+                    struct message decodedMsg = readMessage(buf);
+
+                    if(decodedMsg.type == 16){
+                        connectionInfo.isInSession = false;
+                    }
+                    printf("%s\n", decodedMsg.data);
 
                 }else if(strcmp((char*)commandIn[0], "logout") == 0){
                     // create logout info pack
@@ -260,34 +300,3 @@ void unsignedStrCopy(unsigned char* dst, unsigned char* src){
 
     *currentDst = '\0';
 }
-
-// int dataToStr(unsigned char* commandLine[5], unsigned char* dataField, int commandArgc){
-//     int totalLength = 0;
-//
-//     /* Find the length of data and malloc the size of the str --- START --- */
-//     int currentCommand = 0;
-//     while(currentCommand != commandArgc){
-//         totalLength += strlen((char *)commandLine[currentCommand]);
-//         currentCommand++;
-//     }
-//     dataField = (unsigned char*)realloc(dataField, sizeof(unsigned char) * (totalLength + commandArgc - 1));
-//     for(int i = 0 ; i < totalLength + commandArgc - 1; i++){
-//         dataField[i] = '\0';
-//     }
-//     /* Find the length of data and malloc the size of the str --- END --- */
-//
-//
-//     // add commandData to data field
-//     currentCommand = 0;
-//     while(currentCommand != commandArgc){
-//         unsignedStrCopy(dataField, commandLine[currentCommand]);
-//         if(currentCommand != commandArgc - 1){
-//             int tmpLen = strlen((char *)dataField);
-//             dataField[tmpLen] = ':';
-//             dataField[tmpLen + 1] = '\0';
-//         }
-//         currentCommand++;
-//     }
-//
-//     return totalLength;
-// }
