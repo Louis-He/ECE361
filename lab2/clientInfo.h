@@ -1,3 +1,6 @@
+#ifndef CLIENTINFO_H
+#define CLIENTINFO_H
+
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -23,3 +26,7 @@ struct sessionInfo {
 void initializeRecord();
 bool attemptLogin(unsigned char* clientID, unsigned char* clientPW,
     unsigned char* returnMessage);
+void printUserList();
+void Logout(unsigned char* clientID);
+
+#endif
