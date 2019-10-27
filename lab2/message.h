@@ -15,3 +15,11 @@ struct connection {
     unsigned char* destAddr;
     unsigned char* destPort;
 };
+
+// message types
+/*
+    1: login
+
+
+
+*/
