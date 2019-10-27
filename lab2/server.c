@@ -12,7 +12,12 @@
 
 #include <sys/time.h>
 
+#include "clientInfo.h"
+#include "server.h"
+#include "message.h"
+
 #define BACKLOG 10   // how many pending connections queue will hold
+
 
 /*  * Part of the code is cited from https://beej.us/guide/bgnet/  */
 
@@ -22,6 +27,7 @@ int main(int argc, char** argv) {
         return (EXIT_FAILURE);
     }
 
+    initializeRecord();
     char* portNum = argv[1];
 
     // socket()
@@ -65,16 +71,36 @@ int main(int argc, char** argv) {
         if (!fork()) { // this is the child process
             close(s); // child doesn't need the listener
 
-            int numbytes;
-            if ((numbytes = recv(new_fd, buf, MAXDATASIZE-1, 0)) == -1) {
-                perror("recv");
-                exit(1);
-            }
-            buf[numbytes] = '\0';
-            printf("Server: received '%s'\n",buf);
+            bool isCloseConn = false;
+            while(!isCloseConn){
+                int numbytes;
+                if ((numbytes = recv(new_fd, buf, MAXDATASIZE-1, 0)) == -1) {
+                    perror("recv");
+                    exit(1);
+                }
+                buf[numbytes] = '\0';
 
-            if (send(new_fd, "Hello, world!", 13, 0) == -1)
-                perror("send");
+                // create ack information
+                struct message sendMsg;
+                sendMsg.type = processIncomingMsg(buf, sendMsg.data);
+                strcpy((char*)sendMsg.source, "SERVER");
+                sendMsg.size = strlen((char*) sendMsg.data);
+
+                // send ack information
+                sendMessage(new_fd, sendMsg);
+                printf("[INFO] ACK back to client.\n");
+
+                // if drop connection actively
+                if(sendMsg.type == 3 || sendMsg.type == 14){
+                    isCloseConn = true;
+                }
+                if(sendMsg.type == 3){
+                    printf("Authentication Faliure or Client already logged in. Refuse connection.\n");
+                }else if(sendMsg.type == 14){
+                    printf("Client Logout. Close connection.\n");
+                }
+            }
+            printf("[INFO] Connection Closed.\n");
             close(new_fd);
             exit(0);
         }
@@ -82,4 +108,41 @@ int main(int argc, char** argv) {
     }
 
     return 0;
+}
+
+int processIncomingMsg(char* incomingMsg, unsigned char* ackInfo){
+    struct message decodedMsg = readMessage(incomingMsg);
+
+    if(decodedMsg.type == 1){
+        // seperate username and password
+        unsigned char userName[MAXDATASIZE];
+        unsigned char userPW[MAXDATASIZE];
+
+        char* colon;
+        colon = strchr ((char*) decodedMsg.data, ':');
+        *colon = '\0';
+        colon += sizeof(unsigned char);
+        strcpy((char*) userName, (char*) decodedMsg.data);
+        strcpy((char*) userPW, (char*) colon);
+
+        // start login process
+        bool isLoginSuccessful = attemptLogin(userName, userPW, ackInfo);
+        // return ack type
+        if(isLoginSuccessful){
+            return 2;
+        }else{
+            return 3;
+        }
+    }else if(decodedMsg.type == 4){
+        Logout(decodedMsg.source);
+        return 14;
+    }else if(decodedMsg.type == 12){
+        printUserList();
+        strcpy((char*) ackInfo, (char*) "LIST RETURN");
+        return 13;
+    }else if(decodedMsg.type == 9){
+        
+    }
+
+    return -1;
 }

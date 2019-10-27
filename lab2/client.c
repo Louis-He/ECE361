@@ -61,6 +61,7 @@ int main(int argc, char** argv){
                 if(connectionInfo.isConnected){
                     printf("[ERROR] Already connected. Please drop the connection first.\n");
                 }else{
+                    bool isConnected = true;
                     // start new connection here
                     int rv = getaddrinfo((char *)commandIn[3], (char *)commandIn[4], &hints, &res);
                     if(rv != 0){
@@ -69,10 +70,11 @@ int main(int argc, char** argv){
                     }
                     s = socket(AF_INET, SOCK_STREAM, 0);
                     if(connect(s, res->ai_addr, res->ai_addrlen) == -1){
+                        isConnected = false;
                         perror("[ERROR] Cannot Connect To the Server");
                         continue;
                     }
-                    printf("[INFO] Connected to the Server\n");
+                    printf("[INFO] Try to Login\n");
 
                     // create login info pack
                     sendMsg.type = 1;
@@ -80,6 +82,7 @@ int main(int argc, char** argv){
                     strcpy((char*) sendMsg.source, (char*) commandIn[1]);
                     strcpy((char*) sendMsg.data, (char*) encodedData);
                     // send login info
+                    printf("[INFO] Message ready\n");
                     sendMessage(s, sendMsg);
 
                     // received from server to comfirm connection
@@ -89,9 +92,28 @@ int main(int argc, char** argv){
                         exit(1);
                     }
                     buf[numbytes] = '\0';
-                    printf("client: received '%s'\n", buf);
 
-                    connectionInfo.isConnected = true;
+                    struct message decodedMsg = readMessage(buf);
+                    // printf("%d %d %s %s\n", decodedMsg.type, decodedMsg.size,
+                    // decodedMsg.source, decodedMsg.data);
+
+                    if(decodedMsg.type == 2){
+                        // store client id and connection status
+                        connectionInfo.isConnected = true;
+                        strcpy((char*) connectionInfo.source, (char*) sendMsg.source);
+                        strcpy((char*) connectionInfo.destAddr, (char*) commandIn[3]);
+                        strcpy((char*) connectionInfo.destPort, (char*) commandIn[4]);
+
+                        printf("%s\n", decodedMsg.data);
+                    }else{
+                        connectionInfo.isConnected = false;
+                        printf("%s\n", decodedMsg.data);
+                        // drop connection if login unsuccessful
+                        if(isConnected){
+                            printf("[INFO] Connection Closed\n");
+                            close(s);
+                        }
+                    }
                 }
             }else{
                 if(!connectionInfo.isConnected){
@@ -99,8 +121,70 @@ int main(int argc, char** argv){
                     continue;
                 }
 
-                if(strcmp((char*)commandIn[0], "logout") == 0){
+                if(strcmp((char*)commandIn[0], "list") == 0){
+                    // create logout info pack
+                    sendMsg.type = 12;
+                    sendMsg.size = strlen((char*) "list");
+                    strcpy((char*) sendMsg.source,(char*) connectionInfo.source);
+                    strcpy((char*) sendMsg.data, "list");
+                    // send logout info
+                    sendMessage(s, sendMsg);
 
+                    // received from server to comfirm FIN
+                    int numbytes = recv(s, buf, MAXDATASIZE-1, 0);
+                    if (numbytes == -1) {
+                        perror("recv");
+                        exit(1);
+                    }
+                    buf[numbytes] = '\0';
+
+                    struct message decodedMsg = readMessage(buf);
+
+
+                }else if(strcmp((char*)commandIn[0], "createsession") == 0){
+                    // TODO.
+                    // create create session info pack
+                    sendMsg.type = 9;
+                    sendMsg.size = strlen((char*) commandIn[1]);
+                    strcpy((char*) sendMsg.source, (char*) connectionInfo.source);
+                    strcpy((char*) sendMsg.data, (char*) commandIn[1]);
+                    // send create session info
+                    printf("[INFO] Message ready\n");
+                    sendMessage(s, sendMsg);
+
+                    // received from server to comfirm successfully create and joinsession
+                    int numbytes = recv(s, buf, MAXDATASIZE-1, 0);
+                    if (numbytes == -1) {
+                        perror("recv");
+                        exit(1);
+                    }
+                    buf[numbytes] = '\0';
+
+                    struct message decodedMsg = readMessage(buf);
+
+                }else if(strcmp((char*)commandIn[0], "logout") == 0){
+                    // create logout info pack
+                    sendMsg.type = 4;
+                    sendMsg.size = strlen((char*) "EXIT");
+                    strcpy((char*) sendMsg.source,(char*) connectionInfo.source);
+                    strcpy((char*) sendMsg.data, "EXIT");
+                    // send logout info
+                    sendMessage(s, sendMsg);
+
+                    // received from server to comfirm FIN
+                    int numbytes = recv(s, buf, MAXDATASIZE-1, 0);
+                    if (numbytes == -1) {
+                        perror("recv");
+                        exit(1);
+                    }
+                    buf[numbytes] = '\0';
+
+                    struct message decodedMsg = readMessage(buf);
+                    if(decodedMsg.type == 14){
+                        // change connection status
+                        connectionInfo.isConnected = false;
+                        printf("[INFO] Connection Closed\n");
+                    }
                 }
             }
 
@@ -115,8 +199,6 @@ int main(int argc, char** argv){
             printf("[ERROR] Unknown Error.\n");
         }
     }
-
-    // End connection here
 
     return 0;
 }
@@ -158,18 +240,6 @@ int readInAndProcessCommand(unsigned char* commandLine[5], unsigned char* encode
     return 2;
 }
 
-void sendMessage(int s, struct message encodedMsg){
-    char txt[MAXDATASIZE];
-    const int len = sprintf(txt, "%d,%d,%s,%s",
-        encodedMsg.type, encodedMsg.size, encodedMsg.source, encodedMsg.data);
-    if(send(s, txt, strlen(txt), 0) == -1){
-        perror("send");
-    }
-}
-
-void readMessage(){
-
-}
 
 // helper functions below
 void unsignedStrCopy(unsigned char* dst, unsigned char* src){
