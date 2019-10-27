@@ -15,8 +15,8 @@ struct connection {
     bool isConnected;
     bool isInSession;
     unsigned char source[MAX_NAME];
-    unsigned char* destAddr;
-    unsigned char* destPort;
+    unsigned char destAddr[MAX_NAME];
+    unsigned char destPort[MAX_NAME];
 };
 
 void sendMessage(int s, struct message encodedMsg);

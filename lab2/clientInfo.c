@@ -33,7 +33,6 @@ void initializeRecord(){
 }
 
 bool attemptLogin(unsigned char* clientID, unsigned char* clientPW, unsigned char* returnMessage){
-    printUserList();
     for(int i = 0; i < MAX_USER; i++){
         // if userID exist
         if(strcmp((char*) clientID, (char*) currentClientInfo[i].clientID) == 0){
