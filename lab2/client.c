@@ -20,6 +20,7 @@
 // socket()
 struct connection connectionInfo;
 pthread_t tid;
+int s2;
 
 int main(int argc, char** argv){
     int s;
@@ -85,7 +86,7 @@ int main(int argc, char** argv){
                     strcpy((char*) sendMsg.source, (char*) commandIn[1]);
                     strcpy((char*) sendMsg.data, (char*) encodedData);
                     // send login info
-                    printf("[INFO] Message ready\n");
+                    // printf("[INFO] Message ready\n");
                     sendMessage(s, sendMsg);
 
                     // received from server to comfirm connection
@@ -155,7 +156,7 @@ int main(int argc, char** argv){
                     strcpy((char*) sendMsg.source, (char*) connectionInfo.source);
                     strcpy((char*) sendMsg.data, (char*) commandIn[1]);
                     // send create session info
-                    printf("[INFO] Message ready\n");
+                    // printf("[INFO] Message ready\n");
                     sendMessage(s, sendMsg);
 
                     // received from server to comfirm successfully create and joinsession
@@ -189,7 +190,7 @@ int main(int argc, char** argv){
                     strcpy((char*) sendMsg.source, (char*) connectionInfo.source);
                     strcpy((char*) sendMsg.data, (char*) commandIn[1]);
                     // send create session info
-                    printf("[INFO] Message ready\n");
+                    // printf("[INFO] Message ready\n");
                     sendMessage(s, sendMsg);
 
                     // received from server to comfirm successfully create and joinsession
@@ -223,7 +224,7 @@ int main(int argc, char** argv){
                     strcpy((char*) sendMsg.source, (char*) connectionInfo.source);
                     strcpy((char*) sendMsg.data, "");
                     // send leave session info
-                    printf("[INFO] Message ready\n");
+                    // printf("[INFO] Message ready\n");
                     sendMessage(s, sendMsg);
 
                     // received from server to comfirm successfully create and joinsession
@@ -237,6 +238,7 @@ int main(int argc, char** argv){
                     struct message decodedMsg = readMessage(buf);
 
                     if(decodedMsg.type == 16){
+                        close(s2);
                         pthread_cancel(tid);
                         connectionInfo.isInSession = false;
                     }
@@ -293,7 +295,7 @@ int main(int argc, char** argv){
             strcpy((char*) sendMsg.source, (char*) connectionInfo.source);
             strcpy((char*) sendMsg.data, (char*) commandIn[1]);
             // send create session info
-            printf("[INFO] Message ready\n");
+            // printf("[INFO] Message ready\n");
             sendMessage(s, sendMsg);
 
             // // received from server to comfirm successfully create and joinsession
@@ -316,29 +318,6 @@ int main(int argc, char** argv){
 }
 
 void *myThreadFun(void *vargp){
-    // // new socket()
-    // struct addrinfo hints;
-    // struct addrinfo* res;
-    // int yes=1;
-    //
-    // memset(&hints, 0, sizeof hints);
-    // hints.ai_family = AF_INET;  // use IPv4 or IPv6, whichever
-    // hints.ai_socktype = SOCK_STREAM;
-    // hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
-    //
-    // int rv = getaddrinfo(NULL, portNum, &hints, &res);
-    //
-    // int s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    // setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-    // bind(s, res->ai_addr, res->ai_addrlen);
-    //
-    // if(listen(s, BACKLOG) == -1){
-    //     perror("listen");
-    //     exit(1);
-    // }
-    //
-    // printf("server: waiting for connections...\n");
-
     // socket()
     struct addrinfo hints;
     struct addrinfo* res;
@@ -355,7 +334,7 @@ void *myThreadFun(void *vargp){
     sprintf(newPort, "%d", originPort + 1);
     int rv = getaddrinfo(NULL, newPort, &hints, &res);
 
-    int s2 = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    s2 = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
     setsockopt(s2, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
     bind(s2, res->ai_addr, res->ai_addrlen);
 
@@ -373,15 +352,16 @@ void *myThreadFun(void *vargp){
         new_fd = accept(s2, (struct sockaddr *)&their_addr, &sin_size);
         if (new_fd == -1) {
             perror("accept");
-            continue;
+            pthread_exit(0);
         }
 
         if (!fork()) { // this is the child process
             close(s2); // child doesn't need the listener
             char buf[MAXDATASIZE];
             // received from server to comfirm connection
-            int numbytes = recv(new_fd, buf, MAXDATASIZE-1, 0);
-            if (numbytes == -1) {
+            // int numbytes = recv(new_fd, buf, MAXDATASIZE-1, 0);
+            int numbytes;
+            if ((numbytes = recv(new_fd, buf, MAXDATASIZE-1, 0)) == -1) {
                 perror("recv");
                 exit(1);
             }
@@ -389,7 +369,7 @@ void *myThreadFun(void *vargp){
 
             struct message decodedMsg = readMessage(buf);
 
-            printf("%d, %s\n", decodedMsg.type, decodedMsg.data);
+            printf("%s\n", decodedMsg.data);
             close(new_fd);
             exit(0);
         }

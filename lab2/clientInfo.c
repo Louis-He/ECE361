@@ -256,13 +256,17 @@ bool isMessageSent(unsigned char* clientID, unsigned char* Message, unsigned cha
 
     // create send msg information
     struct message sendMsg;
-    strcpy((char*) sendMsg.data, (char*) Message);
+    unsigned char messageinfo[MAX_DATA];
+    sprintf((char*)messageinfo, "[%s -> %s] %s", (char*) clientID, (char*) currentClientInfo[clientIdx].sessionID, (char*) Message);
+
+    strcpy((char*) sendMsg.data, (char*) messageinfo);
     sendMsg.type = 11;
     strcpy((char*)sendMsg.source, "SERVER");
     sendMsg.size = strlen((char*) sendMsg.data);
 
     for(int i = 0; i < MAX_USER; i++){
-        if(strcmp((char*)currentClientInfo[i].sessionID, (char*)currentClientInfo[clientIdx].sessionID) == 0){
+        if(currentClientInfo[i].isInsession &&
+            strcmp((char*)currentClientInfo[i].sessionID, (char*)currentClientInfo[clientIdx].sessionID) == 0){
 
             // struct sockaddr_in *addr_in = (struct sockaddr_in *)&currentClientInfo[clientIdx].socketID;
             // char *s = inet_ntoa(addr_in->sin_addr);
