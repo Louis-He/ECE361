@@ -7,6 +7,6 @@
 #include "message.h"
 
 // process incoming msg and return ack message type and
-int processIncomingMsg(char* incomingMsg, unsigned char* ackInfo);
+int processIncomingMsg(struct sockaddr socketID, char* incomingMsg, unsigned char* ackInfo, unsigned char* source);
 
 #endif

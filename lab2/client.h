@@ -7,6 +7,9 @@
 
 #define MAX_COMMAND_LEN 1000
 
+
+void *myThreadFun(void *vargp);
+
 // return status:
 // 0: quit
 // 1: ready to transfer

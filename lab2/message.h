@@ -17,6 +17,7 @@ struct connection {
     unsigned char source[MAX_NAME];
     unsigned char destAddr[MAX_NAME];
     unsigned char destPort[MAX_NAME];
+    unsigned char portNum[10];
 };
 
 void sendMessage(int s, struct message encodedMsg);
@@ -50,6 +51,8 @@ struct message readMessage(char* incomingMsg);
     15: [server -> client] acknowledge unsuccessful created new session
     16: [server -> client] leave session successful
     17: [server -> client] leave session failed
+    18: [server -> client] message sent successful
+    19: [server -> client] message sent failed
 
 */
 #endif

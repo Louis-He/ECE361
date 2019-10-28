@@ -1,11 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
 
 #include <sys/mman.h>
 #include <sys/types.h>
 
 #include "clientInfo.h"
 #include "string.h"
+#include "message.h"
 
 static struct clientInfo* currentClientInfo;
 static struct sessionInfo* currentSessionInfo;
@@ -32,7 +42,7 @@ void initializeRecord(){
     }
 }
 
-bool attemptLogin(unsigned char* clientID, unsigned char* clientPW, unsigned char* returnMessage){
+bool attemptLogin(struct sockaddr socketID, unsigned char* clientID, unsigned char* clientPW, unsigned char* returnMessage, unsigned char* source){
     for(int i = 0; i < MAX_USER; i++){
         // if userID exist
         if(strcmp((char*) clientID, (char*) currentClientInfo[i].clientID) == 0){
@@ -44,6 +54,22 @@ bool attemptLogin(unsigned char* clientID, unsigned char* clientPW, unsigned cha
                 if(strcmp((char*) clientPW, (char*) currentClientInfo[i].clientPW) == 0){
                     currentClientInfo[i].isConnected = true;
                     strcpy((char*) returnMessage, "[INFO] Successfully logged in.");
+
+                    int clientIdx = findClient(clientID);
+                    currentClientInfo[clientIdx].socketID = socketID;
+
+                    struct sockaddr_in *addr_in = (struct sockaddr_in *)&socketID;
+                    char *s = inet_ntoa(addr_in->sin_addr);
+                    int portNum = addr_in->sin_port;
+                    currentClientInfo[clientIdx].portNum = portNum;
+
+                    char portnum[10];
+                    sprintf(portnum, "%d", portNum);
+                    printf("%s:%s\n", s, portnum);
+                    strcpy((char*)currentClientInfo[clientIdx].ipAdd, (char*) s);
+
+                    strcpy((char*) source, portnum);
+
                     return true;
                 }else{
                     currentClientInfo[i].isConnected = false;
@@ -106,7 +132,7 @@ bool clientInSession(unsigned char* clientID){
     return false;
 }
 
-bool joinSession(unsigned char* clientID, bool newSession, unsigned char* sessionID, unsigned char* returnMessage){
+bool joinSession(unsigned char* clientID, bool newSession, unsigned char* sessionID, unsigned char* returnMessage, unsigned char* source){
     int sessionIdx = -1;
 
     if(!newSession){
@@ -148,11 +174,17 @@ bool joinSession(unsigned char* clientID, bool newSession, unsigned char* sessio
         strcpy((char *) returnMessage, (char *)"[INFO] Successfully Joined Session.");
     }
 
+    // struct sockaddr_in *addr_in = (struct sockaddr_in *)&currentClientInfo[clientIdx].socketID;
+    // char *s = inet_ntoa(addr_in->sin_addr);
+    // int portNum = addr_in->sin_port;
+    // char portnum[10];
+    // sprintf(portnum, "%d", portNum);
+    // printf("%s:%s\n", s, portnum);
 
     return true;
 }
 
-bool createSession(unsigned char* clientID, unsigned char* sessionID, unsigned char* returnMessage){
+bool createSession(unsigned char* clientID, unsigned char* sessionID, unsigned char* returnMessage, unsigned char* source){
     int avaliableSessionIdx = -1;
 
     // check if user already in a session
@@ -180,7 +212,7 @@ bool createSession(unsigned char* clientID, unsigned char* sessionID, unsigned c
     // no error, create and join a new session
     newSession(sessionID, avaliableSessionIdx);
     strcpy((char *) returnMessage, (char *)"[INFO] Session created successfully.");
-    joinSession(clientID, true, sessionID, returnMessage);
+    joinSession(clientID, true, sessionID, returnMessage, source);
 
     return true;
 }
@@ -216,4 +248,62 @@ void printSessionList(){
         }
     }
     return;
+}
+
+bool isMessageSent(unsigned char* clientID, unsigned char* Message, unsigned char* returnMessage){
+    int clientIdx = findClient(clientID);
+    // int sessionIdx = findSession(currentClientInfo[clientIdx].sessionID);
+
+    // create send msg information
+    struct message sendMsg;
+    strcpy((char*) sendMsg.data, (char*) Message);
+    sendMsg.type = 11;
+    strcpy((char*)sendMsg.source, "SERVER");
+    sendMsg.size = strlen((char*) sendMsg.data);
+
+    for(int i = 0; i < MAX_USER; i++){
+        if(strcmp((char*)currentClientInfo[i].sessionID, (char*)currentClientInfo[clientIdx].sessionID) == 0){
+
+            // struct sockaddr_in *addr_in = (struct sockaddr_in *)&currentClientInfo[clientIdx].socketID;
+            // char *s = inet_ntoa(addr_in->sin_addr);
+            // int portNum = addr_in->sin_port + 1;
+            // char portnum[10];
+            // sprintf(portnum, "%d", portNum);
+
+            // send message information
+            // start new connection here
+            struct addrinfo hints;
+            struct addrinfo* res;
+            memset(&hints, 0, sizeof hints);
+            hints.ai_family = AF_INET;  // use IPv4
+            hints.ai_socktype = SOCK_STREAM;
+            hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
+
+            printf("[INFO] Port: %d\n", currentClientInfo[i].portNum + 1);
+            char s[200];
+            strcpy(s, (char*)currentClientInfo[i].ipAdd);
+            char portnum[10];
+            sprintf(portnum, "%d", currentClientInfo[i].portNum + 1);
+
+            int rv = getaddrinfo(s, portnum, &hints, &res);
+            if(rv != 0){
+                printf("[ERROR] Invalid IP Address or Port Number.\n");
+                continue;
+            }
+            int tmpsocket = socket(AF_INET, SOCK_STREAM, 0);
+            if(connect(tmpsocket, res->ai_addr, res->ai_addrlen) == -1){
+                perror("[ERROR] Cannot Connect To the client");
+                continue;
+            }
+            printf("connected to client\n");
+            printf("[INFO] Message to client: %s\n", currentClientInfo[i].clientID);
+
+            sendMessage(tmpsocket, sendMsg);
+
+            close(tmpsocket);
+        }
+    }
+
+    strcpy((char*)returnMessage, "[INFO] Sending message over.");
+    return true;
 }

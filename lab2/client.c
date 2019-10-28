@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200112L
 #define MAXDATASIZE 1000
+#define BACKLOG 10
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,23 +10,26 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include <sys/time.h>
 #include "client.h"
 #include "message.h"
 
 /*  * Part of the code is cited from https://beej.us/guide/bgnet/  */
+// socket()
+struct connection connectionInfo;
+pthread_t tid;
 
 int main(int argc, char** argv){
+    int s;
     printf("[Info] Text Conference Service Start. Please connect to a server.\n");
 
-    struct connection connectionInfo;
+
     connectionInfo.isConnected = false;
     connectionInfo.isInSession = false;
     // Start connection here
 
-    // socket()
-    int s;
     char buf[MAXDATASIZE];
 
     // connection
@@ -35,7 +39,6 @@ int main(int argc, char** argv){
     hints.ai_family = AF_INET;  // use IPv4
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
-
 
     // initialize some data
     unsigned char* commandIn[5];
@@ -57,7 +60,7 @@ int main(int argc, char** argv){
             // valid input
             struct message sendMsg;
 
-            if(strcmp((char*)commandIn[0], "login") == 0){
+            if(strcmp((char*)commandIn[0], "/login") == 0){
                 if(connectionInfo.isConnected){
                     printf("[ERROR] Already connected. Please drop the connection first.\n");
                 }else{
@@ -100,10 +103,10 @@ int main(int argc, char** argv){
                     if(decodedMsg.type == 2){
                         // store client id and connection status
                         connectionInfo.isConnected = true;
+                        strcpy((char*) connectionInfo.portNum, (char*) decodedMsg.source);
                         strcpy((char*) connectionInfo.source, (char*) sendMsg.source);
                         strcpy((char*) connectionInfo.destAddr, (char*) commandIn[3]);
                         strcpy((char*) connectionInfo.destPort, (char*) commandIn[4]);
-
                         printf("%s\n", decodedMsg.data);
                     }else{
                         connectionInfo.isConnected = false;
@@ -121,7 +124,7 @@ int main(int argc, char** argv){
                     continue;
                 }
 
-                if(strcmp((char*)commandIn[0], "list") == 0){
+                if(strcmp((char*)commandIn[0], "/list") == 0){
                     // create logout info pack
                     sendMsg.type = 12;
                     sendMsg.size = strlen((char*) "list");
@@ -141,7 +144,7 @@ int main(int argc, char** argv){
                     struct message decodedMsg = readMessage(buf);
 
 
-                }else if(strcmp((char*)commandIn[0], "createsession") == 0){
+                }else if(strcmp((char*)commandIn[0], "/createsession") == 0){
                     if(connectionInfo.isInSession){
                         printf("[ERROR] Already in session.\n");
                         continue;
@@ -168,12 +171,48 @@ int main(int argc, char** argv){
                         printf("%s\n", decodedMsg.data);
                         // create session successfully
                         connectionInfo.isInSession = true;
+                        // create listening thread
+                        pthread_create(&tid, NULL, myThreadFun, (void *)&tid);
+
                     }else if(decodedMsg.type == 15){
                         printf("%s\n", decodedMsg.data);
                     }
-                }else if(strcmp((char*)commandIn[0], "joinsession") == 0){
-                    // TODO HERE!!!!
-                }else if(strcmp((char*)commandIn[0], "leavesession") == 0){
+                }else if(strcmp((char*)commandIn[0], "/joinsession") == 0){
+                    if(connectionInfo.isInSession){
+                        printf("[ERROR] Already in session.\n");
+                        continue;
+                    }
+
+                    // create join session info pack
+                    sendMsg.type = 5;
+                    sendMsg.size = strlen((char*) commandIn[1]);
+                    strcpy((char*) sendMsg.source, (char*) connectionInfo.source);
+                    strcpy((char*) sendMsg.data, (char*) commandIn[1]);
+                    // send create session info
+                    printf("[INFO] Message ready\n");
+                    sendMessage(s, sendMsg);
+
+                    // received from server to comfirm successfully create and joinsession
+                    int numbytes = recv(s, buf, MAXDATASIZE-1, 0);
+                    if (numbytes == -1) {
+                        perror("recv");
+                        exit(1);
+                    }
+                    buf[numbytes] = '\0';
+
+                    struct message decodedMsg = readMessage(buf);
+                    if(decodedMsg.type == 6){
+                        printf("%s\n", decodedMsg.data);
+                        // join session successfully
+                        connectionInfo.isInSession = true;
+
+                        // create listening thread
+                        pthread_t tid;
+                        pthread_create(&tid, NULL, myThreadFun, (void *)&tid);
+                    }else if(decodedMsg.type == 7){
+                        printf("%s\n", decodedMsg.data);
+                    }
+                }else if(strcmp((char*)commandIn[0], "/leavesession") == 0){
                     if(!connectionInfo.isInSession){
                         printf("[ERROR] Not in any session. Join a session first.\n");
                         continue;
@@ -198,11 +237,12 @@ int main(int argc, char** argv){
                     struct message decodedMsg = readMessage(buf);
 
                     if(decodedMsg.type == 16){
+                        pthread_cancel(tid);
                         connectionInfo.isInSession = false;
                     }
                     printf("%s\n", decodedMsg.data);
 
-                }else if(strcmp((char*)commandIn[0], "logout") == 0){
+                }else if(strcmp((char*)commandIn[0], "/logout") == 0){
                     // create logout info pack
                     sendMsg.type = 4;
                     sendMsg.size = strlen((char*) "EXIT");
@@ -235,6 +275,38 @@ int main(int argc, char** argv){
             break;
         }else if (isLoop == 2){
             printf("[ERROR] Invalid Command, Please Check.\n");
+        }else if (isLoop == 3){
+            if(!connectionInfo.isConnected){
+                printf("[ERROR] Not connected to any server.\n");
+                continue;
+            }
+            if(!connectionInfo.isInSession){
+                printf("[ERROR] Not joined any session.\n");
+                continue;
+            }
+
+            // create message info pack
+            struct message sendMsg;
+
+            sendMsg.type = 11;
+            sendMsg.size = strlen((char*) commandIn[1]);
+            strcpy((char*) sendMsg.source, (char*) connectionInfo.source);
+            strcpy((char*) sendMsg.data, (char*) commandIn[1]);
+            // send create session info
+            printf("[INFO] Message ready\n");
+            sendMessage(s, sendMsg);
+
+            // // received from server to comfirm successfully create and joinsession
+            // int numbytes = recv(s, buf, MAXDATASIZE-1, 0);
+            // if (numbytes == -1) {
+            //     perror("recv");
+            //     exit(1);
+            // }
+            // buf[numbytes] = '\0';
+            //
+            // struct message decodedMsg = readMessage(buf);
+            //
+            // printf("Message\n");
         }else{
             printf("[ERROR] Unknown Error.\n");
         }
@@ -243,15 +315,102 @@ int main(int argc, char** argv){
     return 0;
 }
 
+void *myThreadFun(void *vargp){
+    // // new socket()
+    // struct addrinfo hints;
+    // struct addrinfo* res;
+    // int yes=1;
+    //
+    // memset(&hints, 0, sizeof hints);
+    // hints.ai_family = AF_INET;  // use IPv4 or IPv6, whichever
+    // hints.ai_socktype = SOCK_STREAM;
+    // hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
+    //
+    // int rv = getaddrinfo(NULL, portNum, &hints, &res);
+    //
+    // int s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    // setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+    // bind(s, res->ai_addr, res->ai_addrlen);
+    //
+    // if(listen(s, BACKLOG) == -1){
+    //     perror("listen");
+    //     exit(1);
+    // }
+    //
+    // printf("server: waiting for connections...\n");
+
+    // socket()
+    struct addrinfo hints;
+    struct addrinfo* res;
+    int yes=1;
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;  // use IPv4 or IPv6, whichever
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
+
+    int originPort;
+    sscanf((char*)connectionInfo.portNum, "%d", &originPort);
+    char newPort[10];
+    sprintf(newPort, "%d", originPort + 1);
+    int rv = getaddrinfo(NULL, newPort, &hints, &res);
+
+    int s2 = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+    setsockopt(s2, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+    bind(s2, res->ai_addr, res->ai_addrlen);
+
+    if(listen(s2, BACKLOG) == -1){
+        perror("listen");
+        exit(1);
+    }
+
+    printf("Client Port #%s: waiting for message...\n", newPort);
+    struct sockaddr their_addr; // connector's address information
+    socklen_t sin_size;
+    while(true){
+        int new_fd;
+        sin_size = sizeof their_addr;
+        new_fd = accept(s2, (struct sockaddr *)&their_addr, &sin_size);
+        if (new_fd == -1) {
+            perror("accept");
+            continue;
+        }
+
+        if (!fork()) { // this is the child process
+            close(s2); // child doesn't need the listener
+            char buf[MAXDATASIZE];
+            // received from server to comfirm connection
+            int numbytes = recv(new_fd, buf, MAXDATASIZE-1, 0);
+            if (numbytes == -1) {
+                perror("recv");
+                exit(1);
+            }
+            buf[numbytes] = '\0';
+
+            struct message decodedMsg = readMessage(buf);
+
+            printf("%d, %s\n", decodedMsg.type, decodedMsg.data);
+            close(new_fd);
+            exit(0);
+        }
+    }
+    return NULL;
+}
+
 int readInAndProcessCommand(unsigned char* commandLine[5], unsigned char* encodedData){
-    scanf("%s", commandLine[0]);
+    unsigned char incomingMsg[MAXDATASIZE];
+    memset (incomingMsg, '\0', sizeof(unsigned char) * MAXDATASIZE);
+    scanf("%[^\n]s", incomingMsg);
+    setbuf(stdin, NULL);
 
-    if(strcmp((char*)commandLine[0], "login") == 0){
-        scanf("%s", commandLine[1]);
-        scanf("%s", commandLine[2]);
-        scanf("%s", commandLine[3]);
-        scanf("%s", commandLine[4]);
+    sscanf((char*) incomingMsg, "%s", (char*)commandLine[0]);
 
+    if(strcmp((char*)commandLine[0], "/login") == 0){
+        sscanf((char*) incomingMsg, "%s %s %s %s %s", (char*) commandLine[0],
+            (char*) commandLine[1],
+            (char*) commandLine[2],
+            (char*) commandLine[3],
+            (char*) commandLine[4]);
         unsignedStrCopy(encodedData, commandLine[1]);
         int tmpLen = strlen((char *)encodedData);
         encodedData[tmpLen] = ':';
@@ -259,27 +418,29 @@ int readInAndProcessCommand(unsigned char* commandLine[5], unsigned char* encode
         unsignedStrCopy(encodedData, commandLine[2]);
 
         return 1;
-    } else if(strcmp((char*)commandLine[0], "logout") == 0){
+    } else if(strcmp((char*)commandLine[0], "/logout") == 0){
         return 1;
-    } else if(strcmp((char*)commandLine[0], "joinsession") == 0){
-        scanf("%s", commandLine[1]);
+    } else if(strcmp((char*)commandLine[0], "/joinsession") == 0){
+        sscanf((char*) incomingMsg, "%s %s", (char*) commandLine[0], (char*) commandLine[1]);
         strcpy((char*)encodedData, (char*)commandLine[1]);
         return 1;
-    } else if(strcmp((char*)commandLine[0], "leavesession") == 0){
+    } else if(strcmp((char*)commandLine[0], "/leavesession") == 0){
         return 1;
-    } else if(strcmp((char*)commandLine[0], "createsession") == 0){
-        scanf("%s", commandLine[1]);
+    } else if(strcmp((char*)commandLine[0], "/createsession") == 0){
+        sscanf((char*) incomingMsg, "%s %s", (char*) commandLine[0], (char*) commandLine[1]);
         strcpy((char*)encodedData, (char*)commandLine[1]);
         return 1;
-    } else if(strcmp((char*)commandLine[0], "list") == 0){
+    } else if(strcmp((char*)commandLine[0], "/list") == 0){
         return 1;
-    } else if(strcmp((char*)commandLine[0], "quit") == 0){
+    } else if(strcmp((char*)commandLine[0], "/quit") == 0){
         return 0;
+    } else if(strlen((char*)commandLine[0]) > 0 && commandLine[0][0] == '/'){
+        return 2;
     }
 
-    return 2;
+    strcpy((char*) commandLine[1], (char*) incomingMsg);
+    return 3;
 }
-
 
 // helper functions below
 void unsignedStrCopy(unsigned char* dst, unsigned char* src){

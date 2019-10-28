@@ -7,8 +7,11 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include <sys/time.h>
 
@@ -43,7 +46,6 @@ int main(int argc, char** argv) {
     int rv = getaddrinfo(NULL, portNum, &hints, &res);
 
     int s = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    int new_fd;
     setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
     bind(s, res->ai_addr, res->ai_addrlen);
 
@@ -55,17 +57,20 @@ int main(int argc, char** argv) {
     printf("server: waiting for connections...\n");
 
     // start transmission
-    struct sockaddr_storage their_addr; // connector's address information
+    struct sockaddr their_addr; // connector's address information
     socklen_t sin_size;
 
     char buf[MAXDATASIZE];
     while (true) {
+        int new_fd;
         sin_size = sizeof their_addr;
         new_fd = accept(s, (struct sockaddr *)&their_addr, &sin_size);
         if (new_fd == -1) {
             perror("accept");
             continue;
         }
+
+        printf("%d\n", new_fd);
 
         // ?? mutithreading?
         if (!fork()) { // this is the child process
@@ -82,13 +87,14 @@ int main(int argc, char** argv) {
 
                 // create ack information
                 struct message sendMsg;
-                sendMsg.type = processIncomingMsg(buf, sendMsg.data);
-                strcpy((char*)sendMsg.source, "SERVER");
+                sendMsg.type = processIncomingMsg(their_addr, buf, sendMsg.data, sendMsg.source);
                 sendMsg.size = strlen((char*) sendMsg.data);
 
                 // send ack information
-                sendMessage(new_fd, sendMsg);
-                printf("[INFO] ACK back to client.\n");
+                if(sendMsg.type != 18){
+                    sendMessage(new_fd, sendMsg);
+                    printf("[INFO] ACK back to client.\n");
+                }
 
                 // if drop connection actively
                 if(sendMsg.type == 3 || sendMsg.type == 14){
@@ -100,6 +106,7 @@ int main(int argc, char** argv) {
                     printf("Client Logout. Close connection.\n");
                 }
             }
+
             printf("[INFO] Connection Closed.\n");
             close(new_fd);
             exit(0);
@@ -110,8 +117,9 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-int processIncomingMsg(char* incomingMsg, unsigned char* ackInfo){
+int processIncomingMsg(struct sockaddr socketID, char* incomingMsg, unsigned char* ackInfo, unsigned char* source){
     struct message decodedMsg = readMessage(incomingMsg);
+    strcpy((char*)source, "SERVER");
 
     if(decodedMsg.type == 1){
         // seperate username and password
@@ -126,7 +134,7 @@ int processIncomingMsg(char* incomingMsg, unsigned char* ackInfo){
         strcpy((char*) userPW, (char*) colon);
 
         // start login process
-        bool isLoginSuccessful = attemptLogin(userName, userPW, ackInfo);
+        bool isLoginSuccessful = attemptLogin(socketID, userName, userPW, ackInfo, source);
         // return ack type
         if(isLoginSuccessful){
             return 2;
@@ -141,7 +149,7 @@ int processIncomingMsg(char* incomingMsg, unsigned char* ackInfo){
         strcpy((char*) ackInfo, (char*) "LIST RETURN");
         return 13;
     }else if(decodedMsg.type == 9){
-        bool isCreateSuccess = createSession(decodedMsg.source, decodedMsg.data, ackInfo);
+        bool isCreateSuccess = createSession(decodedMsg.source, decodedMsg.data, ackInfo, source);
         if(isCreateSuccess){
             return 10;
         }else{
@@ -154,6 +162,16 @@ int processIncomingMsg(char* incomingMsg, unsigned char* ackInfo){
         }else{
             return 17;
         }
+    }else if(decodedMsg.type == 5){
+        bool isJoinSuccess = joinSession(decodedMsg.source, false, decodedMsg.data, ackInfo, source);
+        if(isJoinSuccess){
+            return 6;
+        }else{
+            return 7;
+        }
+    }else if(decodedMsg.type == 11){
+        isMessageSent(decodedMsg.source, decodedMsg.data, ackInfo);
+        return 18;
     }
 
     return -1;
