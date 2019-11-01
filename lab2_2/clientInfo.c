@@ -267,13 +267,6 @@ bool isMessageSent(unsigned char* clientID, unsigned char* Message, unsigned cha
     for(int i = 0; i < MAX_USER; i++){
         if(currentClientInfo[i].isInsession &&
             strcmp((char*)currentClientInfo[i].sessionID, (char*)currentClientInfo[clientIdx].sessionID) == 0){
-
-            // struct sockaddr_in *addr_in = (struct sockaddr_in *)&currentClientInfo[clientIdx].socketID;
-            // char *s = inet_ntoa(addr_in->sin_addr);
-            // int portNum = addr_in->sin_port + 1;
-            // char portnum[10];
-            // sprintf(portnum, "%d", portNum);
-
             // send message information
             // start new connection here
             struct addrinfo hints;
@@ -310,4 +303,53 @@ bool isMessageSent(unsigned char* clientID, unsigned char* Message, unsigned cha
 
     strcpy((char*)returnMessage, "[INFO] Sending message over.");
     return true;
+}
+
+bool broadCastMessageSent(unsigned char* Message, unsigned char* returnMessage){
+    // TODO
+    // create send msg information
+    struct message sendMsg;
+    unsigned char messageinfo[MAX_DATA];
+    sprintf((char*)messageinfo, "[BROADCAST ANNOUNCEMENT] %s", (char*) Message);
+
+    strcpy((char*) sendMsg.data, (char*) messageinfo);
+    sendMsg.type = 11;
+    strcpy((char*)sendMsg.source, "SERVER");
+    sendMsg.size = strlen((char*) sendMsg.data);
+
+    for(int i = 0; i < MAX_USER; i++){
+        if(currentClientInfo[i].isConnected){
+            // send message information
+            // start new connection here
+            struct addrinfo hints;
+            struct addrinfo* res;
+            memset(&hints, 0, sizeof hints);
+            hints.ai_family = AF_INET;  // use IPv4
+            hints.ai_socktype = SOCK_STREAM;
+            hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
+
+            printf("[INFO] Port: %d\n", currentClientInfo[i].portNum + 1);
+            char s[200];
+            strcpy(s, (char*)currentClientInfo[i].ipAdd);
+            char portnum[10];
+            sprintf(portnum, "%d", currentClientInfo[i].portNum + 1);
+
+            int rv = getaddrinfo(s, portnum, &hints, &res);
+            if(rv != 0){
+                printf("[ERROR] Invalid IP Address or Port Number.\n");
+                continue;
+            }
+            int tmpsocket = socket(AF_INET, SOCK_STREAM, 0);
+            if(connect(tmpsocket, res->ai_addr, res->ai_addrlen) == -1){
+                perror("[ERROR] Cannot Connect To the client");
+                continue;
+            }
+            printf("connected to client\n");
+            printf("[INFO] Broadcast Message to client: %s\n", currentClientInfo[i].clientID);
+            
+            sendMessage(tmpsocket, sendMsg);
+
+            close(tmpsocket);
+        }
+    }
 }

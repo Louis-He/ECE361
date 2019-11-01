@@ -42,5 +42,5 @@ bool leaveSession(unsigned char* clientID, unsigned char* returnMessage);
 void printSessionList();
 
 bool isMessageSent(unsigned char* clientID, unsigned char* Message, unsigned char* returnMessage);
-
+bool broadCastMessageSent(unsigned char* Message, unsigned char* returnMessage);
 #endif

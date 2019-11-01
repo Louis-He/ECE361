@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <pthread.h>
 
 #include <sys/time.h>
 
@@ -23,12 +24,17 @@
 
 
 /*  * Part of the code is cited from https://beej.us/guide/bgnet/  */
+void *myThreadFun(void *vargp);
 
 int main(int argc, char** argv) {
     if(argc != 2){
         printf("[Error] Not enough or too many arguments.\n");
         return (EXIT_FAILURE);
     }
+
+    // read command
+    pthread_t tid;
+    pthread_create(&tid, NULL, myThreadFun, (void *)&tid);
 
     initializeRecord();
     char* portNum = argv[1];
@@ -114,6 +120,9 @@ int main(int argc, char** argv) {
         close(new_fd);  // parent doesn't need this
     }
 
+    // stop reding command
+    pthread_cancel(tid);
+
     return 0;
 }
 
@@ -175,4 +184,18 @@ int processIncomingMsg(struct sockaddr socketID, char* incomingMsg, unsigned cha
     }
 
     return -1;
+}
+
+void *myThreadFun(void *vargp){
+    char command[100];
+
+    while(true){
+        scanf("%s", command);
+
+        // TODO
+        unsigned char returnMessage[MAXDATASIZE];
+        broadCastMessageSent((unsigned char*)command, returnMessage);
+    }
+
+    return NULL;
 }

@@ -109,6 +109,10 @@ int main(int argc, char** argv){
                         strcpy((char*) connectionInfo.destAddr, (char*) commandIn[3]);
                         strcpy((char*) connectionInfo.destPort, (char*) commandIn[4]);
                         printf("%s\n", decodedMsg.data);
+
+                        // open listening sorkect
+                        // create listening thread
+                        pthread_create(&tid, NULL, myThreadFun, (void *)&tid);
                     }else{
                         connectionInfo.isConnected = false;
                         printf("%s\n", decodedMsg.data);
@@ -172,9 +176,6 @@ int main(int argc, char** argv){
                         printf("%s\n", decodedMsg.data);
                         // create session successfully
                         connectionInfo.isInSession = true;
-                        // create listening thread
-                        pthread_create(&tid, NULL, myThreadFun, (void *)&tid);
-
                     }else if(decodedMsg.type == 15){
                         printf("%s\n", decodedMsg.data);
                     }
@@ -207,9 +208,9 @@ int main(int argc, char** argv){
                         // join session successfully
                         connectionInfo.isInSession = true;
 
-                        // create listening thread
-                        pthread_t tid;
-                        pthread_create(&tid, NULL, myThreadFun, (void *)&tid);
+                        // // create listening thread
+                        // pthread_t tid;
+                        // pthread_create(&tid, NULL, myThreadFun, (void *)&tid);
                     }else if(decodedMsg.type == 7){
                         printf("%s\n", decodedMsg.data);
                     }
@@ -238,8 +239,8 @@ int main(int argc, char** argv){
                     struct message decodedMsg = readMessage(buf);
 
                     if(decodedMsg.type == 16){
-                        close(s2);
-                        pthread_cancel(tid);
+                        // close(s2);
+                        //pthread_cancel(tid);
                         connectionInfo.isInSession = false;
                     }
                     printf("%s\n", decodedMsg.data);
@@ -265,6 +266,10 @@ int main(int argc, char** argv){
                     if(decodedMsg.type == 14){
                         // change connection status
                         connectionInfo.isConnected = false;
+
+                        // close listening thread
+                        close(s2);
+                        pthread_cancel(tid);
                         printf("[INFO] Connection Closed\n");
                     }
                 }
