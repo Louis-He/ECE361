@@ -143,7 +143,7 @@ int main(int argc, char** argv){
                     buf[numbytes] = '\0';
 
                     struct message decodedMsg = readMessage(buf);
-
+                    printf("%s\n", decodedMsg.data);
 
                 }else if(strcmp((char*)commandIn[0], "/createsession") == 0){
                     if(connectionInfo.isInSession){
@@ -265,6 +265,7 @@ int main(int argc, char** argv){
                     if(decodedMsg.type == 14){
                         // change connection status
                         connectionInfo.isConnected = false;
+                        connectionInfo.isInSession = false;
                         printf("[INFO] Connection Closed\n");
                     }
                 }

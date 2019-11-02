@@ -87,6 +87,7 @@ int main(int argc, char** argv) {
 
                 // create ack information
                 struct message sendMsg;
+                memset(sendMsg.data, 0, sizeof MAX_DATA);
                 sendMsg.type = processIncomingMsg(their_addr, buf, sendMsg.data, sendMsg.source);
                 sendMsg.size = strlen((char*) sendMsg.data);
 
@@ -142,11 +143,15 @@ int processIncomingMsg(struct sockaddr socketID, char* incomingMsg, unsigned cha
             return 3;
         }
     }else if(decodedMsg.type == 4){
+        if(clientInSession(decodedMsg.source)){
+            bool isLeaveSuccess = leaveSession(decodedMsg.source, ackInfo);
+        }
         Logout(decodedMsg.source);
         return 14;
     }else if(decodedMsg.type == 12){
-        printUserList();
-        strcpy((char*) ackInfo, (char*) "LIST RETURN");
+        getActiveUserList(ackInfo);
+        getAvaliableSession(ackInfo);
+        printf("%s\n", ackInfo);
         return 13;
     }else if(decodedMsg.type == 9){
         bool isCreateSuccess = createSession(decodedMsg.source, decodedMsg.data, ackInfo, source);

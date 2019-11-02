@@ -94,11 +94,40 @@ void printUserList(){
     return;
 }
 
+void getActiveUserList(unsigned char* activeUserList){
+    char tempStr[MAX_DATA];
+    sprintf((char*) tempStr, "Active Users: ");
+    strcat((char*) activeUserList, (char*) tempStr);
+
+    for(int i = 0; i < MAX_USER; i++){
+        if(currentClientInfo[i].isConnected){
+            sprintf((char*) tempStr, "%s ", currentClientInfo[i].clientID);
+            strcat((char*) activeUserList, (char*) tempStr);
+        }
+    }
+    strcat((char*) activeUserList, "; ");
+    return;
+}
+
+void getAvaliableSession(unsigned char* activeSessionList){
+    char tempStr[MAX_DATA];
+    sprintf((char*) tempStr, "Avaliable Sessions: ");
+    strcat((char*) activeSessionList, (char*) tempStr);
+
+    for(int i = 0; i < MAX_CONN; i++){
+        if(currentSessionInfo[i].membernum != 0){
+            sprintf((char*) tempStr, "%s ", currentSessionInfo[i].sessionID);
+            strcat((char*) activeSessionList, (char*) tempStr);
+        }
+    }
+    return;
+}
+
 void Logout(unsigned char* clientID){
     for(int i = 0; i < MAX_USER; i++){
         if(strcmp((char*) clientID, (char*) currentClientInfo[i].clientID) == 0){
             currentClientInfo[i].isConnected = false;
-
+            currentClientInfo[i].isInsession = false;
             printf("[INFO] Logged out user: %s\n", currentClientInfo[i].clientID);
             return;
         }
@@ -346,10 +375,11 @@ bool broadCastMessageSent(unsigned char* Message, unsigned char* returnMessage){
             }
             printf("connected to client\n");
             printf("[INFO] Broadcast Message to client: %s\n", currentClientInfo[i].clientID);
-            
+
             sendMessage(tmpsocket, sendMsg);
 
             close(tmpsocket);
         }
     }
+    return true;
 }

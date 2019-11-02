@@ -1,0 +1,7 @@
+-- Server --
+1. Broadcast message is supported.
+    Admin can broadcast message to any users who already logged in.
+
+-- Client --
+1. Leave session automatically.
+    Logout will automatically leave session on the server side.

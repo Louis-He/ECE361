@@ -29,6 +29,8 @@ void initializeRecord();
 bool attemptLogin(struct sockaddr socketID, unsigned char* clientID, unsigned char* clientPW,
     unsigned char* returnMessage, unsigned char* source);
 void printUserList();
+void getActiveUserList(unsigned char* activeUserList);
+void getAvaliableSession(unsigned char* activeSessionList);
 void Logout(unsigned char* clientID);
 
 int findClient(unsigned char* clientID);

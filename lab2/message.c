@@ -24,7 +24,6 @@ struct message readMessage(char* incomingMsg){
     unsigned char msgSourceAndData[MAXDATASIZE];
 
     sscanf(incomingMsg, "%d,%d,%[^\n]s", &decodedMsg.type, &decodedMsg.size, msgSourceAndData);
-
     // split soruce and data
     char* comma;
     comma = strchr ((char*) msgSourceAndData, ',');
