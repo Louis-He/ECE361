@@ -203,13 +203,6 @@ bool joinSession(unsigned char* clientID, bool newSession, unsigned char* sessio
         strcpy((char *) returnMessage, (char *)"[INFO] Successfully Joined Session.");
     }
 
-    // struct sockaddr_in *addr_in = (struct sockaddr_in *)&currentClientInfo[clientIdx].socketID;
-    // char *s = inet_ntoa(addr_in->sin_addr);
-    // int portNum = addr_in->sin_port;
-    // char portnum[10];
-    // sprintf(portnum, "%d", portNum);
-    // printf("%s:%s\n", s, portnum);
-
     return true;
 }
 

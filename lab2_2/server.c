@@ -178,6 +178,16 @@ int processIncomingMsg(struct sockaddr socketID, char* incomingMsg, unsigned cha
         }
     }else if(decodedMsg.type == 5){
         bool isJoinSuccess = joinSession(decodedMsg.source, false, decodedMsg.data, ackInfo, source);
+
+        unsigned char broadCastMsgReturn[MAX_DATA];
+        unsigned char broadCastMsg[MAX_DATA];
+
+        strcpy((char*) broadCastMsg, (char*) "[System INFO] ");
+        strcat((char*) broadCastMsg, (char*) decodedMsg.source);
+        strcat((char*) broadCastMsg, (char*)  " joined the session.");
+
+        isMessageSent(decodedMsg.source, (unsigned char*)broadCastMsg, broadCastMsgReturn);
+
         if(isJoinSuccess){
             return 6;
         }else{

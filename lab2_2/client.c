@@ -196,11 +196,13 @@ int main(int argc, char** argv){
 
                     // received from server to comfirm successfully create and joinsession
                     int numbytes = recv(s, buf, MAXDATASIZE-1, 0);
+
                     if (numbytes == -1) {
                         perror("recv");
                         exit(1);
                     }
                     buf[numbytes] = '\0';
+                    // printf("%s\n", buf);
 
                     struct message decodedMsg = readMessage(buf);
                     if(decodedMsg.type == 6){
