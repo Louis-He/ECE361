@@ -366,7 +366,7 @@ int main(int argc, char** argv){
                     // create login info pack
                     sendMsg.type = 29;
                     sendMsg.size = strlen((char*) encodedData);
-                    strcpy((char*) sendMsg.source, (char*) commandIn[1]);
+                    strcpy((char*) sendMsg.source, (char*) connectionInfo.source);
                     strcpy((char*) sendMsg.data, (char*) encodedData);
                     // send login info
                     // printf("[INFO] Message ready\n");
@@ -381,6 +381,7 @@ int main(int argc, char** argv){
                     buf[numbytes] = '\0';
     
                     struct message decodedMsg = readMessage(buf);
+                    printf("%s\n", decodedMsg.data);
                 }
             }
 
@@ -476,6 +477,8 @@ void *myThreadFun(void *vargp){
             }else if(decodedMsg.type == 23){
                 printf("%s\n", decodedMsg.data);
                 *isInvitedBool = 1;
+            }else if(decodedMsg.type == 32){
+                printf("%s\n", decodedMsg.data);
             }
 
             close(new_fd);
@@ -525,7 +528,7 @@ int readInAndProcessCommand(unsigned char* commandLine[5], unsigned char* encode
         strcpy((char*)encodedData, (char*)commandLine[1]);
         return 1;
     } else if(strcmp((char*)commandLine[0], "/whisper") == 0){
-        sscanf((char*) incomingMsg, "%s %s %s", (char*) commandLine[0],
+        sscanf((char*) incomingMsg, "%s %s %[^\n]s", (char*) commandLine[0],
             (char*) commandLine[1],
             (char*) commandLine[2]);
         unsignedStrCopy(encodedData, commandLine[1]);

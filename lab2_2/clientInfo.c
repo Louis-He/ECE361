@@ -466,7 +466,7 @@ bool responseInvitationUser(unsigned char* clientID, bool isAccept, unsigned cha
 }
 
 bool whisperClient(unsigned char* sourceID, unsigned char* destID, unsigned char* whisperMessage, unsigned char* returnMessage){
-    int sourceIdx = findClient(sourceID);
+    printf("source: %s", sourceID);
     int destIdx = findClient(destID);
 
     if(destIdx == -1){
@@ -486,7 +486,7 @@ bool whisperClient(unsigned char* sourceID, unsigned char* destID, unsigned char
         sprintf((char*)messageinfo, "[%s sends you a whisper] %s", (char*) sourceID, (char*) whisperMessage);
 
         strcpy((char*) sendMsg.data, (char*) messageinfo);
-        sendMsg.type = 23;
+        sendMsg.type = 32;
         strcpy((char*)sendMsg.source, "SERVER");
         sendMsg.size = strlen((char*) sendMsg.data);
 
@@ -522,11 +522,7 @@ bool whisperClient(unsigned char* sourceID, unsigned char* destID, unsigned char
             close(tmpsocket);
         }
     }
-    // send invitation to the dest user END
-
-    strcpy((char*) currentClientInfo[destIdx].invitedSession, (char*) currentClientInfo[sourceIdx].sessionID);
-    strcpy((char*) returnMessage, "[INFO] Invitation sent successfully.");
+    // send Whisper to the dest user END
+    strcpy((char*) returnMessage, "[INFO] Whisper sent successfully.");
     return true;
-
-
 }

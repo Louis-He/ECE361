@@ -52,5 +52,5 @@ bool broadCastMessageSent(unsigned char* Message, unsigned char* returnMessage);
 bool inviteUser(unsigned char* clientID, unsigned char* destID, unsigned char* returnMessage);
 bool responseInvitationUser(unsigned char* clientID, bool isAccept, unsigned char* returnMessage);
 
-bool whisperClient(unsigned char* sourceID, unsigned char* destID, unsigned char* returnMessage);
+bool whisperClient(unsigned char* sourceID, unsigned char* destID, unsigned char* whisperMessage, unsigned char* returnMessage);
 #endif

@@ -225,11 +225,15 @@ int processIncomingMsg(struct sockaddr socketID, char* incomingMsg, unsigned cha
         colon += sizeof(unsigned char);
         strcpy((char*) destClient, (char*) decodedMsg.data);
         strcpy((char*) message, (char*) colon);
-
         
+        bool isSentWhisper = whisperClient(decodedMsg.source, destClient, message, ackInfo);
 
-        return 30;
-        return 31;
+        printf("[TEST]%s\n", ackInfo);
+        if(isSentWhisper){
+            return 30;
+        }else {
+            return 31;
+        }
     }
 
     return -1;
