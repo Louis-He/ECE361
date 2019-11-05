@@ -14,6 +14,7 @@ struct message {
 struct connection {
     bool isConnected;
     bool isInSession;
+
     unsigned char source[MAX_NAME];
     unsigned char destAddr[MAX_NAME];
     unsigned char destPort[MAX_NAME];
@@ -54,5 +55,14 @@ struct message readMessage(char* incomingMsg);
     18: [server -> client] message sent successful
     19: [server -> client] message sent failed
 
+    // extra feature message list:
+    20: [client -> server] invite other user
+    21: [server -> client] invitation sent success
+    22: [server -> client] invitation sent fail
+    23: [server -> client] new invitation
+    24: [client -> server] accept invitation
+    25: [client -> server] decline invitation
+    26: [server -> client] ack response to invitation
+    27: [server -> client] nack response to invitation
 */
 #endif

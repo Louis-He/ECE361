@@ -196,6 +196,24 @@ int processIncomingMsg(struct sockaddr socketID, char* incomingMsg, unsigned cha
     }else if(decodedMsg.type == 11){
         isMessageSent(decodedMsg.source, decodedMsg.data, ackInfo);
         return 18;
+    }else if(decodedMsg.type == 20){
+        bool isInviteSuccess = inviteUser(decodedMsg.source, decodedMsg.data, ackInfo);
+
+        if(isInviteSuccess){
+            return 21;
+        }else{
+            return 22;
+        }
+    }else if(decodedMsg.type == 24){
+        bool isJoinSuccess = responseInvitationUser(decodedMsg.source, true, ackInfo);
+        if(isJoinSuccess){
+            return 26;
+        }else{
+            return 27;
+        }
+    }else if(decodedMsg.type == 25){
+        bool isDeclineSuccess = responseInvitationUser(decodedMsg.source, false, ackInfo);
+        return 26;
     }
 
     return -1;

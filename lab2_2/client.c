@@ -1,4 +1,4 @@
-#define _POSIX_C_SOURCE 200112L
+// #define _POSIX_C_SOURCE 200112L
 #define MAXDATASIZE 1000
 #define BACKLOG 10
 
@@ -6,11 +6,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <netinet/in.h>
 
 #include <sys/time.h>
 #include "client.h"
@@ -19,16 +21,19 @@
 /*  * Part of the code is cited from https://beej.us/guide/bgnet/  */
 // socket()
 struct connection connectionInfo;
+int* isInvitedBool;
 pthread_t tid;
 int s2;
 
 int main(int argc, char** argv){
+    isInvitedBool = (int*)mmap(NULL, sizeof(int), PROT_READ | PROT_WRITE,
+                    MAP_SHARED | MAP_ANONYMOUS, -1, 0);
     int s;
     printf("[Info] Text Conference Service Start. Please connect to a server.\n");
 
-
     connectionInfo.isConnected = false;
     connectionInfo.isInSession = false;
+    *isInvitedBool = 0;
     // Start connection here
 
     char buf[MAXDATASIZE];
@@ -191,7 +196,6 @@ int main(int argc, char** argv){
                     strcpy((char*) sendMsg.source, (char*) connectionInfo.source);
                     strcpy((char*) sendMsg.data, (char*) commandIn[1]);
                     // send create session info
-                    // printf("[INFO] Message ready\n");
                     sendMessage(s, sendMsg);
 
                     // received from server to comfirm successfully create and joinsession
@@ -275,6 +279,91 @@ int main(int argc, char** argv){
                         pthread_cancel(tid);
                         printf("[INFO] Connection Closed\n");
                     }
+                }else if(strcmp((char*)commandIn[0], "/invite") == 0){
+                    if(!connectionInfo.isInSession){
+                        printf("[ERROR] Not in any session. Join a session first.\n");
+                        continue;
+                    }
+
+                    // create leave session info pack
+                    sendMsg.type = 20;
+                    strcpy((char*) sendMsg.source, (char*) connectionInfo.source);
+                    strcpy((char*) sendMsg.data, (char*) commandIn[1]);
+                    sendMsg.size = strlen((char*) commandIn[1]);
+                    // send message
+                    sendMessage(s, sendMsg);
+
+                    // received from server to comfirm successfully create and joinsession
+                    int numbytes = recv(s, buf, MAXDATASIZE-1, 0);
+
+                    if (numbytes == -1) {
+                        perror("recv");
+                        exit(1);
+                    }
+                    buf[numbytes] = '\0';
+
+                    struct message decodedMsg = readMessage(buf);
+                    printf("%s\n", decodedMsg.data);
+                }else if(strcmp((char*)commandIn[0], "/accept") == 0){
+                    if(*isInvitedBool == 0){
+                        printf("[ERROR] Not have any invitation.\n");
+                        continue;
+                    }
+                    if(connectionInfo.isInSession){
+                        printf("[ERROR] Already in session. Please leave session first.\n");
+                        continue;
+                    }
+                    // create accept session info pack
+                    sendMsg.type = 24;
+                    strcpy((char*) sendMsg.source, (char*) connectionInfo.source);
+                    strcpy((char*) sendMsg.data, (char*) "ACCEPT");
+                    sendMsg.size = strlen((char*) "ACCEPT");
+                    // send message
+                    sendMessage(s, sendMsg);
+
+                    // received from server to comfirm successfully create and joinsession
+                    int numbytes = recv(s, buf, MAXDATASIZE-1, 0);
+
+                    if (numbytes == -1) {
+                        perror("recv");
+                        exit(1);
+                    }
+                    buf[numbytes] = '\0';
+
+                    struct message decodedMsg = readMessage(buf);
+                    printf("%s\n", decodedMsg.data);
+
+                    if(decodedMsg.type == 26){
+                        connectionInfo.isInSession = true;
+                    }
+                    *isInvitedBool = 0;
+                }else if(strcmp((char*)commandIn[0], "/decline") == 0){
+                    if(*isInvitedBool == 0){
+                        printf("[ERROR] Not have any invitation.\n");
+                        continue;
+                    }
+
+                    // create decline session info pack
+                    sendMsg.type = 25;
+                    strcpy((char*) sendMsg.source, (char*) connectionInfo.source);
+                    strcpy((char*) sendMsg.data, (char*) "DECLINE");
+                    sendMsg.size = strlen((char*) "DECLINE");
+                    // send message
+                    sendMessage(s, sendMsg);
+
+                    // received from server to comfirm successfully create and joinsession
+                    int numbytes = recv(s, buf, MAXDATASIZE-1, 0);
+
+                    if (numbytes == -1) {
+                        perror("recv");
+                        exit(1);
+                    }
+                    buf[numbytes] = '\0';
+
+                    struct message decodedMsg = readMessage(buf);
+                    printf("%s\n", decodedMsg.data);
+
+                    *isInvitedBool = 0;
                 }
             }
 
@@ -377,7 +466,13 @@ void *myThreadFun(void *vargp){
 
             struct message decodedMsg = readMessage(buf);
 
-            printf("%s\n", decodedMsg.data);
+            if(decodedMsg.type == 11){
+                printf("%s\n", decodedMsg.data);
+            }else if(decodedMsg.type == 23){
+                printf("%s\n", decodedMsg.data);
+                *isInvitedBool = 1;
+            }
+
             close(new_fd);
             exit(0);
         }
@@ -419,6 +514,14 @@ int readInAndProcessCommand(unsigned char* commandLine[5], unsigned char* encode
         strcpy((char*)encodedData, (char*)commandLine[1]);
         return 1;
     } else if(strcmp((char*)commandLine[0], "/list") == 0){
+        return 1;
+    } else if(strcmp((char*)commandLine[0], "/invite") == 0){
+        sscanf((char*) incomingMsg, "%s %s", (char*) commandLine[0], (char*) commandLine[1]);
+        strcpy((char*)encodedData, (char*)commandLine[1]);
+        return 1;
+    } else if(strcmp((char*)commandLine[0], "/accept") == 0){
+        return 1;
+    } else if(strcmp((char*)commandLine[0], "/decline") == 0){
         return 1;
     } else if(strcmp((char*)commandLine[0], "/quit") == 0){
         return 0;

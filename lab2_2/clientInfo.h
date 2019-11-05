@@ -18,6 +18,9 @@ struct clientInfo {
 
     bool isConnected;
     bool isInsession;
+
+    bool isInvited;
+    unsigned char invitedSession[MAX_ATTR_LEN];
 };
 
 struct sessionInfo {
@@ -45,4 +48,7 @@ void printSessionList();
 
 bool isMessageSent(unsigned char* clientID, unsigned char* Message, unsigned char* returnMessage);
 bool broadCastMessageSent(unsigned char* Message, unsigned char* returnMessage);
+
+bool inviteUser(unsigned char* clientID, unsigned char* destID, unsigned char* returnMessage);
+bool responseInvitationUser(unsigned char* clientID, bool isAccept, unsigned char* returnMessage);
 #endif
