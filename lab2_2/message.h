@@ -67,6 +67,7 @@ struct message readMessage(char* incomingMsg);
 
     29: [client -> server] send whisper to another client
     30: [server -> client] ack response to whisper
-    31: [server -> client] send whisper
+    31: [server -> client] nack response to whisper
+    32: [server -> client] send whisper
 */
 #endif

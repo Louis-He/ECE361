@@ -215,7 +215,21 @@ int processIncomingMsg(struct sockaddr socketID, char* incomingMsg, unsigned cha
         bool isDeclineSuccess = responseInvitationUser(decodedMsg.source, false, ackInfo);
         return 26;
     }else if(decodedMsg.type == 29){
+        // seperate destClient and message
+        unsigned char destClient[MAXDATASIZE];
+        unsigned char message[MAXDATASIZE];
+
+        char* colon;
+        colon = strchr ((char*) decodedMsg.data, ':');
+        *colon = '\0';
+        colon += sizeof(unsigned char);
+        strcpy((char*) destClient, (char*) decodedMsg.data);
+        strcpy((char*) message, (char*) colon);
+
         
+
+        return 30;
+        return 31;
     }
 
     return -1;

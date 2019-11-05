@@ -464,3 +464,69 @@ bool responseInvitationUser(unsigned char* clientID, bool isAccept, unsigned cha
         return true;
     }
 }
+
+bool whisperClient(unsigned char* sourceID, unsigned char* destID, unsigned char* whisperMessage, unsigned char* returnMessage){
+    int sourceIdx = findClient(sourceID);
+    int destIdx = findClient(destID);
+
+    if(destIdx == -1){
+        strcpy((char*) returnMessage, "[Error] User not found.");
+        return false;
+    }
+    if(!currentClientInfo[destIdx].isConnected){
+        strcpy((char*) returnMessage, "[Error] The user is not online right now.");
+        return false;
+    }
+
+    // send invitation to the dest user START
+    // create send msg information
+    {
+        struct message sendMsg;
+        unsigned char messageinfo[MAX_DATA];
+        sprintf((char*)messageinfo, "[%s sends you a whisper] %s", (char*) sourceID, (char*) whisperMessage);
+
+        strcpy((char*) sendMsg.data, (char*) messageinfo);
+        sendMsg.type = 23;
+        strcpy((char*)sendMsg.source, "SERVER");
+        sendMsg.size = strlen((char*) sendMsg.data);
+
+        // send message information
+        // start new connection here
+        {
+            struct addrinfo hints;
+            struct addrinfo* res;
+            memset(&hints, 0, sizeof hints);
+            hints.ai_family = AF_INET;  // use IPv4
+            hints.ai_socktype = SOCK_STREAM;
+            hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
+
+            printf("[INFO] Port: %d\n", currentClientInfo[destIdx].portNum + 1);
+            char s[200];
+            strcpy(s, (char*)currentClientInfo[destIdx].ipAdd);
+            char portnum[10];
+            sprintf(portnum, "%d", currentClientInfo[destIdx].portNum + 1);
+
+            int rv = getaddrinfo(s, portnum, &hints, &res);
+            if(rv != 0){
+                printf("[ERROR] Invalid IP Address or Port Number.\n");
+            }
+            int tmpsocket = socket(AF_INET, SOCK_STREAM, 0);
+            if(connect(tmpsocket, res->ai_addr, res->ai_addrlen) == -1){
+                perror("[ERROR] Cannot Connect To the client");
+            }
+            printf("connected to client\n");
+            printf("[INFO] Message to client: %s\n", currentClientInfo[destIdx].clientID);
+
+            sendMessage(tmpsocket, sendMsg);
+
+            close(tmpsocket);
+        }
+    }
+    // send invitation to the dest user END
+
+    strcpy((char*) currentClientInfo[destIdx].invitedSession, (char*) currentClientInfo[sourceIdx].sessionID);
+    strcpy((char*) returnMessage, "[INFO] Invitation sent successfully.");
+    return true;
+
+
+}
