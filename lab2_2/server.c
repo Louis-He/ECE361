@@ -214,6 +214,8 @@ int processIncomingMsg(struct sockaddr socketID, char* incomingMsg, unsigned cha
     }else if(decodedMsg.type == 25){
         bool isDeclineSuccess = responseInvitationUser(decodedMsg.source, false, ackInfo);
         return 26;
+    }else if(decodedMsg.type == 29){
+        
     }
 
     return -1;

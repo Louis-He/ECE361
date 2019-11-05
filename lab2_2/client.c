@@ -103,8 +103,6 @@ int main(int argc, char** argv){
                     buf[numbytes] = '\0';
 
                     struct message decodedMsg = readMessage(buf);
-                    // printf("%d %d %s %s\n", decodedMsg.type, decodedMsg.size,
-                    // decodedMsg.source, decodedMsg.data);
 
                     if(decodedMsg.type == 2){
                         // store client id and connection status
@@ -364,6 +362,25 @@ int main(int argc, char** argv){
                     printf("%s\n", decodedMsg.data);
 
                     *isInvitedBool = 0;
+                }else if(strcmp((char*)commandIn[0], "/whisper") == 0){
+                    // create login info pack
+                    sendMsg.type = 29;
+                    sendMsg.size = strlen((char*) encodedData);
+                    strcpy((char*) sendMsg.source, (char*) commandIn[1]);
+                    strcpy((char*) sendMsg.data, (char*) encodedData);
+                    // send login info
+                    // printf("[INFO] Message ready\n");
+                    sendMessage(s, sendMsg);
+
+                    // received from server to comfirm connection
+                    int numbytes = recv(s, buf, MAXDATASIZE-1, 0);
+                    if (numbytes == -1) {
+                        perror("recv");
+                        exit(1);
+                    }
+                    buf[numbytes] = '\0';
+
+                    struct message decodedMsg = readMessage(buf);
                 }
             }
 
@@ -392,20 +409,8 @@ int main(int argc, char** argv){
             strcpy((char*) sendMsg.source, (char*) connectionInfo.source);
             strcpy((char*) sendMsg.data, (char*) commandIn[1]);
             // send create session info
-            // printf("[INFO] Message ready\n");
             sendMessage(s, sendMsg);
 
-            // // received from server to comfirm successfully create and joinsession
-            // int numbytes = recv(s, buf, MAXDATASIZE-1, 0);
-            // if (numbytes == -1) {
-            //     perror("recv");
-            //     exit(1);
-            // }
-            // buf[numbytes] = '\0';
-            //
-            // struct message decodedMsg = readMessage(buf);
-            //
-            // printf("Message\n");
         }else{
             printf("[ERROR] Unknown Error.\n");
         }
@@ -518,6 +523,16 @@ int readInAndProcessCommand(unsigned char* commandLine[5], unsigned char* encode
     } else if(strcmp((char*)commandLine[0], "/invite") == 0){
         sscanf((char*) incomingMsg, "%s %s", (char*) commandLine[0], (char*) commandLine[1]);
         strcpy((char*)encodedData, (char*)commandLine[1]);
+        return 1;
+    } else if(strcmp((char*)commandLine[0], "/whisper") == 0){
+        sscanf((char*) incomingMsg, "%s %s %s", (char*) commandLine[0],
+            (char*) commandLine[1],
+            (char*) commandLine[2]);
+        unsignedStrCopy(encodedData, commandLine[1]);
+        int tmpLen = strlen((char *)encodedData);
+        encodedData[tmpLen] = ':';
+        encodedData[tmpLen + 1] = '\0';
+        unsignedStrCopy(encodedData, commandLine[2]);
         return 1;
     } else if(strcmp((char*)commandLine[0], "/accept") == 0){
         return 1;

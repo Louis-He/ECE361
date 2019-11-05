@@ -64,5 +64,9 @@ struct message readMessage(char* incomingMsg);
     25: [client -> server] decline invitation
     26: [server -> client] ack response to invitation
     27: [server -> client] nack response to invitation
+
+    29: [client -> server] send whisper to another client
+    30: [server -> client] ack response to whisper
+    31: [server -> client] send whisper
 */
 #endif
