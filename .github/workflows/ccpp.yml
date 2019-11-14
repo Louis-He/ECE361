@@ -4,11 +4,11 @@ on: [push]
 
 jobs:
   build:
-
+    name: build_lab1
     runs-on: ubuntu-latest
     
     steps:
-    - working-directory: ./lab1
-    - uses: actions/checkout@master
+    - uses: actions/checkout@v1
     - name: make
+      working-directory: ./lab1
       run: make
