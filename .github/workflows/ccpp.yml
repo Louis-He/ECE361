@@ -1,4 +1,4 @@
-name: C/C++ CI
+name: ECE361 Labs
 
 on: [push]
 
