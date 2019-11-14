@@ -3,12 +3,32 @@ name: C/C++ CI
 on: [push]
 
 jobs:
-  build:
+  lab1Build:
     name: build_lab1
-    runs-on: ubuntu-latest
+    runs-on: [ubuntu-latest, macOS-latest]
     
     steps:
     - uses: actions/checkout@v1
-    - name: make
+    - name: make lab1
       working-directory: ./lab1
+      run: make
+
+  lab2Build:
+    name: build_lab2
+    runs-on: [ubuntu-latest, macOS-latest]
+    
+    steps:
+    - uses: actions/checkout@v1
+    - name: make lab2
+      working-directory: ./lab2
+      run: make
+      
+  lab2FinalBuild:
+    name: build_lab2Final
+    runs-on: [ubuntu-latest, macOS-latest]
+    
+    steps:
+    - uses: actions/checkout@v1
+    - name: make lab2_2
+      working-directory: ./lab2_2
       run: make
