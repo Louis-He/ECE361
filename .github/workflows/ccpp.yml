@@ -5,7 +5,7 @@ on: [push]
 jobs:
   lab1Build:
     name: build_lab1
-    runs-on: [ubuntu-latest, macOS-latest]
+    runs-on: [ubuntu-latest]
     
     steps:
     - uses: actions/checkout@v1
@@ -15,7 +15,7 @@ jobs:
 
   lab2Build:
     name: build_lab2
-    runs-on: [ubuntu-latest, macOS-latest]
+    runs-on: [ubuntu-latest]
     
     steps:
     - uses: actions/checkout@v1
@@ -25,7 +25,7 @@ jobs:
       
   lab2FinalBuild:
     name: build_lab2Final
-    runs-on: [ubuntu-latest, macOS-latest]
+    runs-on: [ubuntu-latest]
     
     steps:
     - uses: actions/checkout@v1
