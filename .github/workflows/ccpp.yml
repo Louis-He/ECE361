@@ -1,4 +1,4 @@
-name: ECE361 build
+name: Lab Build
 
 on: [push]
 
