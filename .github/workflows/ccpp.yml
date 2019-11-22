@@ -32,3 +32,14 @@ jobs:
     - name: make lab2_2
       working-directory: ./lab2_2
       run: make
+      
+  codeCov:
+    name: codeCov
+    runs-on: [ubuntu-latest]
+    
+    steps:
+      - name: Codecov
+        uses: codecov/codecov-action@v1.0.4
+        with:
+          name: ECE361Codecov
+          token: 2236bb39-b343-4d45-a35e-21148c233c0c
