@@ -26,14 +26,15 @@ jobs:
     - uses: actions/checkout@v1
     - name: buildCovReport
       working-directory: ./lab2_2
-      run: g++ -coverage -O0 -pthread message.c client.c -o client
-            g++ -coverage -O0 -pthread message.c clientInfo.c server.c -o server
-            gcov message.c
-            gcov client.c
-            gcov clientInfo.c
-            gcov server.c
-            chmod 710 client
-            chmod 710 server
+      run: |
+        g++ -coverage -O0 -pthread message.c client.c -o client
+        g++ -coverage -O0 -pthread message.c clientInfo.c server.c -o server
+        gcov message.c
+        gcov client.c
+        gcov clientInfo.c
+        gcov server.c
+        chmod 710 client
+        chmod 710 server
     
     - uses: codecov/codecov-action@v1
       with:
