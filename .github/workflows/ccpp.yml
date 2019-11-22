@@ -35,7 +35,7 @@ jobs:
         gcov server.c
         chmod 710 client
         chmod 710 server
-        ./server
+        ./server 5000
         ./client
 
     - uses: codecov/codecov-action@v1
