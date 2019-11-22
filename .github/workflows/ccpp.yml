@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   lab1Build:
-    name: build_lab1
+    name: build
     runs-on: [ubuntu-latest]
     
     steps:
@@ -12,34 +12,18 @@ jobs:
     - name: make lab1
       working-directory: ./lab1
       run: make
-
-  lab2Build:
-    name: build_lab2
-    runs-on: [ubuntu-latest]
     
-    steps:
     - uses: actions/checkout@v1
     - name: make lab2
       working-directory: ./lab2
       run: make
-      
-  lab2FinalBuild:
-    name: build_lab2Final
-    runs-on: [ubuntu-latest]
     
-    steps:
     - uses: actions/checkout@v1
     - name: make lab2_2
       working-directory: ./lab2_2
       run: make
-      
-  codeCov:
-    name: codeCov
-    runs-on: [ubuntu-latest]
     
-    steps:
-      - uses: actions/checkout@master
-      - uses: codecov/codecov-action@v1
-        with:
-          name: ECE361Codecov
-          token: 2236bb39-b343-4d45-a35e-21148c233c0c
+    - uses: codecov/codecov-action@v1
+      with:
+        name: ECE361Codecov
+        token: 2236bb39-b343-4d45-a35e-21148c233c0c
